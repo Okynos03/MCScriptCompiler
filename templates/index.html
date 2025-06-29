@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MCScript - Compilador de Bloques</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- Partículas de decoración -->
+  <div class="sparkle"></div>
+  <div class="sparkle"></div>
+  <div class="sparkle"></div>
+  <div class="sparkle"></div>
+  
+  <div class="header">
+    <!-- Logo en la izquierda -->
+    <img src="/static/images/logoMCS.png" alt="MCScript Logo" class="logo">
+    <!-- Contenedor de título y subtítulo centrados -->
+    <div class="header-content">
+      <h1>🎮 MCScript Compiler 🎮</h1>
+      <p>Construye tu código bloque por bloque</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Zona izquierda: cuadro editable -->
+    <div class="left">
+      <div class="block-decoration top-left"></div>
+      <div class="block-decoration top-right"></div>
+      <div class="block-decoration bottom-left"></div>
+      <div class="block-decoration bottom-right"></div>
+      
+      <div class="panel-title">📝 Workbench de Código</div>
+      <form action="/lex" method="post">
+        <!--FastAPI mapea al parámetro code: str = Form(...)
+          {{ code }}: valor que venga del backend
+           osea todo pone en un str
+        -->
+        <textarea name="code" rows="20" placeholder="¡Coloca tus bloques de código aquí! ">{{ code }}</textarea>
+        <div class="button-container">
+          <button type="submit">⚡ Compilar Bloques ⚡</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Zona derecha: pasa code con el mismo contenido por ahora que se va a cambiar ya con el analisis quij-->
+    <div class="right">
+      <div class="block-decoration top-left"></div>
+      <div class="block-decoration top-right"></div>
+      <div class="block-decoration bottom-left"></div>
+      <div class="block-decoration bottom-right"></div>
+      
+      <div class="panel-title">🔍 Análisis Léxico</div>
+      <textarea rows="20" readonly placeholder="Aquí aparecerán los tokens analizados...">{{ code }}</textarea>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+# Entorno virtual
+venv/
+.env
+
+# Cachés y compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs / editores
+.vscode/
+.idea/
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Logs, DBs, cobertura
+*.log
+*.sqlite3
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Distribución / paquetes
+build/
+dist/
+*.egg-info/
+
+# Locks de otros lenguajes (si acaso)
+node_modules/
+yarn.lock
+package-lock.json

@@ -1,0 +1,316 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Press Start 2P', monospace;
+  background: linear-gradient(135deg, #87CEEB 0%, #98FB98 50%, #8FBC8F 100%);
+  min-height: 100vh;
+  background-attachment: fixed;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Efecto de nubes flotantes */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.8) 10px, transparent 10px),
+    radial-gradient(circle at 80% 30%, rgba(255,255,255,0.6) 15px, transparent 15px),
+    radial-gradient(circle at 40% 10%, rgba(255,255,255,0.7) 12px, transparent 12px);
+  animation: float 20s infinite linear;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes float {
+  0% { transform: translateX(-100px); }
+  100% { transform: translateX(100vw); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* centrar todo el bloque */
+  gap: 12px;               /* espacio entre logo y texto */
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  border: 4px solid #654321;
+  margin: 20px;
+  padding: 20px;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 8px 0 #654321,
+    0 12px 20px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  max-height: 48px;  /* no crece más que el header */
+  width: auto;
+}
+
+.header-content {
+  text-align: center;  /* mantiene el texto centrado */
+}
+
+.header-content h1 {
+  color: #FFD700;
+  font-size: 24px;
+  text-shadow: 
+    2px 2px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000;
+  margin-bottom: 6px;  /* menos separación al subtítulo */
+}
+
+.header-content p {
+  color: #FFFFFF;
+  font-size: 8px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+
+.container {
+  display: flex;
+  height: calc(100vh - 140px);
+  margin: 20px;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.left, .right {
+  flex: 1;
+  background: linear-gradient(45deg, #228B22, #32CD32);
+  border: 4px solid #006400;
+  padding: 20px;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 8px 0 #006400,
+    0 12px 20px rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.left::before, .right::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.1) 2px,
+    rgba(255,255,255,0.1) 4px
+  );
+  pointer-events: none;
+}
+
+.panel-title {
+  color: #FFFFFF;
+  font-size: 12px;
+  text-shadow: 1px 1px 0 #000;
+  margin-bottom: 15px;
+  text-align: center;
+  background: rgba(0,0,0,0.3);
+  padding: 8px;
+  border: 2px solid #004400;
+}
+
+textarea {
+  width: 100%;
+  height: calc(100% - 100px);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: #F5F5DC;
+  border: 4px solid #8B4513;
+  padding: 15px;
+  resize: none;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.3),
+    inset -2px -2px 4px rgba(255,255,255,0.3);
+  color: #2F4F4F;
+  line-height: 1.4;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.3),
+    inset -2px -2px 4px rgba(255,255,255,0.3),
+    0 0 0 2px #FFD700;
+}
+
+textarea::placeholder {
+  color: #8B7355;
+  font-style: italic;
+}
+
+.button-container {
+  text-align: center;
+  margin-top: 15px;
+}
+
+button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  background: linear-gradient(45deg, #FF8C00, #FFD700);
+  border: 4px solid #B8860B;
+  color: #000;
+  padding: 12px 24px;
+  cursor: pointer;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 6px 0 #B8860B,
+    0 10px 15px rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+
+button:hover {
+  background: linear-gradient(45deg, #FFD700, #FFF8DC);
+  transform: translateY(2px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 4px 0 #B8860B,
+    0 8px 15px rgba(0,0,0,0.3);
+}
+
+button:active {
+  transform: translateY(6px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 2px 0 #B8860B,
+    0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* Decoraciones de bloques */
+.block-decoration {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #8B4513;
+  border: 2px solid #654321;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3);
+}
+
+.block-decoration.top-left {
+  top: -10px;
+  left: -10px;
+}
+
+.block-decoration.top-right {
+  top: -10px;
+  right: -10px;
+}
+
+.block-decoration.bottom-left {
+  bottom: -10px;
+  left: -10px;
+}
+
+.block-decoration.bottom-right {
+  bottom: -10px;
+  right: -10px;
+}
+
+/* Efectos de partículas */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.sparkle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: #FFD700;
+  border-radius: 50%;
+  animation: sparkle 2s infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sparkle:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+.sparkle:nth-child(2) { top: 20%; left: 80%; animation-delay: 0.5s; }
+.sparkle:nth-child(3) { top: 60%; left: 20%; animation-delay: 1s; }
+.sparkle:nth-child(4) { top: 80%; left: 70%; animation-delay: 1.5s; }
+
+/* Tabla de resultados */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background: #F5F5DC;
+  border: 4px solid #8B4513;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.3),
+    inset -2px -2px 4px rgba(255,255,255,0.3);
+}
+
+th, td {
+  border: 2px solid #8B4513;
+  padding: 8px;
+  text-align: left;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+}
+
+th {
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  color: #FFD700;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+td {
+  background: rgba(245, 245, 220, 0.8);
+  color: #2F4F4F;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    height: auto;
+  }
+  
+ .logo {
+    max-height: 32px;
+  }
+  .header-content h1 {
+    font-size: 16px;
+  }
+  .header-content p {
+    font-size: 6px;
+  }
+  
+  textarea {
+    height: 300px;
+  }
+  
+  button {
+    font-size: 8px;
+    padding: 10px 20px;
+  }
+}
