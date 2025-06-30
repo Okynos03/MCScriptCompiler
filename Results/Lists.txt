@@ -1,9 +1,11 @@
 IDENTIFIER                              MEMORY
 --------------------------------------------------
-a                                       6001
-b                                       6002
-suma                                    6003
-chat                                    6004
+valla                                   6001
+a                                       6002
+b                                       6003
+suma                                    6004
+chat                                    6005
+fin_valla                               6006
 
 
 STRING                                  MEMORY

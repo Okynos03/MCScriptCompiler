@@ -33,5 +33,6 @@ async def analyze(request: Request, code: str = Form(...)):
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "code": result_string # por ahora pasa code pq pasa lo mismo que tiene pero lo cambias por ejemplo por tokens_generados
+        "code": code,
+        "result": result_string # por ahora pasa code pq pasa lo mismo que tiene pero lo cambias por ejemplo por tokens_generados
     })
