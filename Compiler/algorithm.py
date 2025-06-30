@@ -1,0 +1,102 @@
+from Compiler.Token import Token
+from Compiler.Errors import Error
+
+class Automaton:
+    def __init__(self, matrix, sigma, Q, q0, F):
+        self.Q = Q
+        self.matrix = matrix
+        self.sigma = sigma
+        self.q0 = q0
+        self.F = F
+        #self.types = {6000: "identifier", 1000: "keyword", 3000: "punctuation", 2000: "operator", 4000: "curly brace", 5000: "bracket", 7000: "integer", 8000: "float"}
+
+    def run(self, text):
+        list = []
+        errors = []
+        identifiers = []
+        strings = []
+        i = 0
+        column = 1
+        row = 1
+        while i < len(text):
+            current = self.q0
+            j = i
+            accepted = False
+            word = ""
+            aux = ""
+
+            while j < len(text):
+                symbol = text[j]
+
+                if current == 160 and symbol != '"':
+                    word += symbol
+                    j += 1
+                    column += 1
+                    if symbol == "\n":
+                        row += 1
+                        column = 1
+                    continue
+                elif current == 164 and symbol != '\n':
+                    j += 1
+                    column += 1
+                    continue
+
+                if symbol == "\n":
+                    symbol = "\\n"
+                if symbol == " ":
+                    symbol = "\\s"
+
+                if symbol.isdigit():
+                    symbol = int(symbol)
+
+                if symbol not in self.sigma:
+                    error = Error("Lexical", "Unrecognized character '%s'" %symbol, row, column)
+                    errors.append(error)
+                    j += 1
+                    column += 1
+                    continue
+
+                current = self.matrix[self.Q.index(current)][self.sigma.index(symbol)]
+
+                if current in self.F:
+                    accepted = True
+                    aux = symbol
+                    break
+
+                j += 1
+                column += 1
+                word += str(symbol)
+
+            i = j
+
+            if accepted or j == len(text):
+                if j == len(text):
+                    current = self.matrix[self.Q.index(current)][self.sigma.index("\\n")]
+
+                if current == 998:
+                    error = Error("Lexical", "Invalid number literal '%s'" % (word + aux), row, column - len(word))
+                    errors.append(error)
+                    i += 1
+                    continue
+                elif current == 100000 or current == 9000 or current == 163:
+                    if current == 9000:
+                        row += 1
+                        column = 1
+                    continue
+
+                token = Token(current, word, row, column - len(word))
+                if 6000 == current:
+                    if word not in [identifier.value for identifier in identifiers]:
+                        identifiers.append(token)
+                        token.set_pool_id(6000 + len(identifiers))
+                elif current == 3004:
+                    if word not in [string.value for string in strings]:
+                        strings.append(token)
+                        token.set_pool_id(3000 + len(strings))
+                list.append(token)
+
+        return list, identifiers, strings, errors
+
+
+
+

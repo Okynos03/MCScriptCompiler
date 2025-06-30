@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from Compiler.main import main as lexer
 
 app = FastAPI()
 
@@ -22,9 +23,15 @@ def form(request: Request):
 @app.post("/lex", response_class=HTMLResponse)
 async def analyze(request: Request, code: str = Form(...)):
     #ejemplo de función y así, pasas el code que es str
-    #tokens_generados = analisis_lex(code)
+    print(code)
+    code = code.replace("\r", "")
+    tokens, errors = lexer(code)
+
+    part1 = "\n".join([str(token.type) for token in tokens])
+    part2 = "\n".join([f"{error.type} error: {error.value} at row {error.row} column {error.column}\n" for error in errors])
+    result_string = f"{part1}\n\n{part2}"
 
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "code": code # por ahora pasa code pq pasa lo mismo que tiene pero lo cambias por ejemplo por tokens_generados
+        "code": result_string # por ahora pasa code pq pasa lo mismo que tiene pero lo cambias por ejemplo por tokens_generados
     })
