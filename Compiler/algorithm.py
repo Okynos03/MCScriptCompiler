@@ -95,7 +95,7 @@ class Automaton:
                         token.set_pool_id(3000 + len(strings))
                 list.append(token)
 
-        return list, identifiers, strings, errors
+        return list, identifiers, strings, errors, 
 
 
 

@@ -37,6 +37,10 @@
            osea todo pone en un str
         -->
         <textarea name="code" rows="20" placeholder="¡Coloca tus bloques de código aquí! ">{{ code }}</textarea>
+        <!-- Panel con HTML coloreado según el lexer -->
+        <div class="panel-title">🖍️ Sintaxis Coloreada</div>
+        <pre class="highlighted"><code>{{ highlighted | safe }}</code></pre>
+        
         <div class="button-container">
           <button type="submit">⚡ Compilar Bloques ⚡</button>
         </div>
