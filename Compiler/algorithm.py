@@ -90,6 +90,8 @@ class Automaton:
                         column = 1
                     continue
 
+                if current not in self.F:
+                    continue
                 token = Token(current, word, row, column - len(word), start_index, i - start_index)
                 if 6000 == current:
                     if word not in [identifier.value for identifier in identifiers]:

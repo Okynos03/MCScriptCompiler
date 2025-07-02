@@ -47,4 +47,4 @@ def syntax(tokens):
     ast = parser.parse()
     string_ast = pretty_print(ast)
 
-    return string_ast
+    return string_ast, parser.errors
