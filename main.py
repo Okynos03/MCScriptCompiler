@@ -30,7 +30,9 @@ async def analyze(request: Request, code: str = Form(...)):
     #ejemplo de función y así, pasas el code que es str
     print(repr(code))
     code = code.replace("\r", "")
-    tokens, errors = main(automata, code)
+    code = code.replace("\xa0", "")
+    print(repr(code))
+    tokens, errors = lexical(automata, code)
 
     part1 = "\n".join([str(token.type) for token in tokens])
     part2 = "\n".join([f"{error.type} error: {error.value} at row {error.row} column {error.column}\n" for error in errors])
@@ -44,10 +46,13 @@ async def analyze(request: Request, code: str = Form(...)):
 
     simple_errors = [{"index": err.index, "length": err.length} for err in errors]
 
+
+    string_ast = syntax(tokens)
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "code": code,
-        "result": result_string,
+        "result": string_ast,
         "tokens_json": simple_tokens,
         "errors_json": simple_errors
     })
