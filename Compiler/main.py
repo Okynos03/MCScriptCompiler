@@ -3,13 +3,8 @@ from Compiler.textfile import TextFile
 from Compiler.algorithm import Automaton
 from Compiler.parser import BacktrackingParser
 
-def main(code):
+def init_automata():
     excel = Excel()
-    resultsfile=TextFile()
-
-    resultsfile.clear('./Results/Tokens.txt')
-    resultsfile.clear('./Results/Lists.txt')
-
     excel.open('./static/MatrizTransicion.xlsx')
 
     excel_data = excel.read()
@@ -25,7 +20,35 @@ def main(code):
                 F.append(i)
 
     automaton = Automaton(matrix, sigma, Q, q0, F)
-    tokens, identifiers, strings, errors = automaton.run(code)
+    return automaton
+
+def main(automata, code):
+    # excel = Excel()
+    # resultsfile=TextFile()
+    #
+    # resultsfile.clear('./Results/Tokens.txt')
+    # resultsfile.clear('./Results/Lists.txt')
+    #
+    # excel.open('./static/MatrizTransicion.xlsx')
+    #
+    # excel_data = excel.read()
+    #
+    # matrix = [i[1:] for i in excel_data[1:]]
+    # sigma = excel_data[0][1:]
+    # Q = [i[0] for i in excel_data[1:]]
+    # q0 = Q[0]
+    # F = [998, 999]
+    # for row in matrix:
+    #     for i in row:
+    #         if i and i not in F and i > 999:
+    #             F.append(i)
+    #
+    # automaton = Automaton(matrix, sigma, Q, q0, F)
+    resultsfile = TextFile()
+    resultsfile.clear('./Results/Tokens.txt')
+    resultsfile.clear('./Results/Lists.txt')
+
+    tokens, identifiers, strings, errors = automata.run(code)
 
     if not tokens:
         print("El archivo no arrojo resultado, favor de revisar")

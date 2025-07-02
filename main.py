@@ -2,12 +2,13 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from Compiler.main import main as lexer
+from Compiler.main import *
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+automata = init_automata()
 
 #Aquí no te metas porque sólo carga el html inicial
 @app.get("/", response_class=HTMLResponse)
@@ -23,9 +24,8 @@ def form(request: Request):
 @app.post("/lex", response_class=HTMLResponse)
 async def analyze(request: Request, code: str = Form(...)):
     #ejemplo de función y así, pasas el code que es str
-    print(code)
-    code = code.replace("\r", "")
-    tokens, errors = lexer(code)
+    print(repr(code))
+    tokens, errors = main(automata, code)
 
     part1 = "\n".join([str(token.type) for token in tokens])
     part2 = "\n".join([f"{error.type} error: {error.value} at row {error.row} column {error.column}\n" for error in errors])
