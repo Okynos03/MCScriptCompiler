@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from Compiler.main import *
+from fastapi.responses import JSONResponse
+
 
 app = FastAPI()
 
@@ -48,4 +50,23 @@ async def analyze(request: Request, code: str = Form(...)):
         "result": result_string,
         "tokens_json": simple_tokens,
         "errors_json": simple_errors
+    })
+
+@app.post("/lex/json")
+async def lex_json(code: str = Form(...)):
+    code = code.replace("\r", "")
+    tokens, errors = main(automata, code)
+
+    simple_tokens = [
+        {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
+        for t in tokens
+    ]
+    simple_errors = [
+        {"index": e.index, "length": e.length}
+        for e in errors
+    ]
+
+    return JSONResponse({
+        "tokens": simple_tokens,
+        "errors": simple_errors
     })
