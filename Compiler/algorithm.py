@@ -1,3 +1,5 @@
+import re
+
 from Compiler.Token import Token
 from Compiler.Errors import Error
 
@@ -23,6 +25,7 @@ class Automaton:
             j = i
             accepted = False
             word = ""
+            start_index = j
             aux = ""
 
             while j < len(text):
@@ -45,12 +48,15 @@ class Automaton:
                     symbol = "\\n"
                 if symbol == " ":
                     symbol = "\\s"
+                elif re.match(r'\s', symbol):
+                    j += 1
+                    continue
 
                 if symbol.isdigit():
                     symbol = int(symbol)
 
                 if symbol not in self.sigma:
-                    error = Error("Lexical", "Unrecognized character '%s'" %symbol, row, column)
+                    error = Error("Lexical", "Unrecognized character '%s'" %symbol, row, column, j, 1)
                     errors.append(error)
                     j += 1
                     column += 1
@@ -74,7 +80,7 @@ class Automaton:
                     current = self.matrix[self.Q.index(current)][self.sigma.index("\\n")]
 
                 if current == 998:
-                    error = Error("Lexical", "Invalid number literal '%s'" % (word + aux), row, column - len(word))
+                    error = Error("Lexical", "Invalid number literal '%s'" % (word + aux), row, column - len(word), start_index, i - start_index)
                     errors.append(error)
                     i += 1
                     continue
@@ -84,7 +90,7 @@ class Automaton:
                         column = 1
                     continue
 
-                token = Token(current, word, row, column - len(word))
+                token = Token(current, word, row, column - len(word), start_index, i - start_index)
                 if 6000 == current:
                     if word not in [identifier.value for identifier in identifiers]:
                         identifiers.append(token)
@@ -95,7 +101,8 @@ class Automaton:
                         token.set_pool_id(3000 + len(strings))
                 list.append(token)
 
-        return list, identifiers, strings, errors, 
+        list.append(Token(1, 'EOF', -1, -1, -1, -1))
+        return list, identifiers, strings, errors
 
 
 
