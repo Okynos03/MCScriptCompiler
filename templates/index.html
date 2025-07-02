@@ -67,11 +67,11 @@
   </div>
 
 <script>
-  // 1. Carga inicial de Quill
+  // Carga inicial de Quill
   const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
-      // quita la toolbar si no la necesitas
+      // quita la toolbar
       toolbar: false,
       keyboard: {
         bindings: {
@@ -88,24 +88,20 @@
     }
   });
 
-  // 2. Al cargar la página, mete el código previo
   const initial = `{{ code | replace("\n", "\\n") | replace("\t", "\\t") }}`;
-  // Pero Quill.getText() espera saltos reales, así que:
   const initialCode = {{ code | tojson }};
   quill.setText(initialCode);
   //quill
 
-  // 3. Form submit → vuelca texto plano limpio
   const form = document.getElementById('codeForm');
   form.addEventListener('submit', () => {
     document.getElementById('codeInput').value = quill.getText();
   });
 
-  // 4. Después del post, justo tras la render del servidor...
   window.addEventListener('DOMContentLoaded', () => {
-    // Recupera el array de tokens embebido por Jinja
+
     const tokens = {{ tokens_json | tojson }};
-    // Define colores según tipo
+
     const colorMap = {
       1000: '#ab0ed6', // keyword
       2000: '#e36209', // operator
@@ -128,7 +124,7 @@
 
 const errors = {{ errors_json | tojson }};
 errors.forEach(e => {
-  // aplicamos formato underline + color rojo
+  // subraya el error lex
   quill.formatText(e.index, e.length, {
     underline: true,
     color: '#ff0000'
