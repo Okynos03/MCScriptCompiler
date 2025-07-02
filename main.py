@@ -33,6 +33,7 @@ def form(request: Request):
         "request": request,
         "tokens_json": [],
         "errors_json": [],
+        "errors_s_json": [],
         "code": ""  # el primer cuadro vacío para cargar ambos en la vista
     })
 
@@ -60,6 +61,8 @@ async def analyze(request: Request, code: str = Form(...)):
 
 
     string_ast, syntax_errors = syntax(tokens)
+    syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
+
     string_syntax_errors = ""
     for error in syntax_errors:
         string_syntax_errors += error.value + "\n"
@@ -69,7 +72,8 @@ async def analyze(request: Request, code: str = Form(...)):
         "code": code,
         "result": string_syntax_errors if len(syntax_errors) > 0 else string_ast,
         "tokens_json": simple_tokens,
-        "errors_json": simple_errors
+        "errors_json": simple_errors,
+        "errors_s_json": syn_errors_l
     })
 
 @app.post("/lex/json")
@@ -87,7 +91,11 @@ async def lex_json(code: str = Form(...)):
         for e in errors
     ]
 
+    string_ast, syntax_errors = syntax(tokens)
+    syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
+
     return JSONResponse({
         "tokens": simple_tokens,
-        "errors": simple_errors
+        "errors": simple_errors,
+        "errors_s_json": syn_errors_l
     })

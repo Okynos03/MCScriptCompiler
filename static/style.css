@@ -349,7 +349,7 @@ td {
 .token-punctuation  { color: #24292e; }
 .token-operator     { color: #e36209; }
 .token-curly-brace  { color: #005cc5; }
-.token-bracket      { color: #079c29; }
+.token-bracket      { color: #ff0000; }
 .token-integer      { color: #005cc5; }
 .token-float        { color: #005cc5; }
 

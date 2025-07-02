@@ -32,25 +32,34 @@ async function updateHighlight() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form.toString()
   });
-  const { tokens, errors } = await resp.json();
+  const { tokens, errors: lexErrors, errors_s_json: syntaxErrors} = await resp.json();
 
   quill.removeFormat(0, text.length);
 
-  //Pinta cada token
-  tokens.forEach(tok => {
-    const color = colorMap[tok.type];
-    if (color && tok.length > 0) {
-      quill.formatText(tok.index, tok.length, { color });
-    }
-  });
+// ——— pinta cada token ———
+tokens.forEach(tok => {
+  const color = colorMap[tok.type];
+  if (color && tok.length > 0) {
+    quill.formatText(tok.index, tok.length, { color });
+  }
+});
 
-  //Subraya errores
-  errors.forEach(err => {
-    quill.formatText(err.index, err.length, {
-      underline: true,
-      color: '#ff0000'
-    });
+// ——— subraya errores léxicos ———
+lexErrors.forEach(err => {
+  quill.formatText(err.index, err.length, {
+    underline: true,
+    color: '#ff0000'
   });
+});
+
+// ——— subraya errores sintácticos ———
+syntaxErrors.forEach(err => {
+  quill.formatText(err.index, err.length, {
+    underline: true,
+    color: '#ff0000'
+  });
+});
+    
 
 }
 

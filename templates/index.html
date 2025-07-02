@@ -130,6 +130,15 @@ errors.forEach(e => {
     color: '#ff0000'
   });
 });
+
+const errors_s = {{ errors_s_json | tojson }};
+errors_s.forEach(e => {
+  // subraya el error lex
+  quill.formatText(e.index, e.length, {
+    underline: true,
+    color: '#ff0000'
+  });
+});
 </script>
 
 
