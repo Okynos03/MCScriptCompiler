@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <title>MCScript - Compilador de Bloques</title>
   <link rel="stylesheet" href="/static/style.css">
+  <!-- Quill editor -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+  <script src="/static/js/toggle.js" defer></script>
 </head>
 <body>
   <!-- Partículas de decoración -->
@@ -22,6 +27,10 @@
     </div>
   </div>
 
+  <div class="toggle-container">
+    <button id="toggleAnalysis" type="button">Mostrar Análisis</button>
+  </div>
+
   <div class="container">
     <!-- Zona izquierda: cuadro editable -->
     <div class="left">
@@ -31,20 +40,18 @@
       <div class="block-decoration bottom-right"></div>
       
       <div class="panel-title">📝 Workbench de Código</div>
-      <form action="/lex" method="post">
-        <!--FastAPI mapea al parámetro code: str = Form(...)
-          {{ code }}: valor que venga del backend
-           osea todo pone en un str
-        -->
-        <textarea name="code" rows="20" placeholder="¡Coloca tus bloques de código aquí! ">{{ code }}</textarea>
-        <!-- Panel con HTML coloreado según el lexer -->
-        <div class="panel-title">🖍️ Sintaxis Coloreada</div>
-        <pre class="highlighted"><code>{{ highlighted | safe }}</code></pre>
-        
+      <form id="codeForm" action="/lex" method="post">
+        <!-- Contenedor Quill -->
+        <div id="editor"></div>
+
+        <!-- Campo oculto para enviar el código plano -->
+        <textarea name="code" id="codeInput" hidden></textarea>
+
         <div class="button-container">
           <button type="submit">⚡ Compilar Bloques ⚡</button>
         </div>
       </form>
+
     </div>
 
     <!-- Zona derecha: pasa code con el mismo contenido por ahora que se va a cambiar ya con el analisis quij-->
@@ -54,9 +61,81 @@
       <div class="block-decoration bottom-left"></div>
       <div class="block-decoration bottom-right"></div>
       
-      <div class="panel-title">🔍 Análisis Léxico</div>
+      <div class="panel-title">🔍 Consola</div>
       <textarea rows="20" readonly placeholder="Aquí aparecerán los tokens analizados...">{{ result }}</textarea>
     </div>
   </div>
+
+<script>
+  // 1. Carga inicial de Quill
+  const quill = new Quill('#editor', {
+    theme: 'snow',
+    modules: {
+      // quita la toolbar si no la necesitas
+      toolbar: false,
+      keyboard: {
+        bindings: {
+          // captura TAB para insertar \t
+          tab: {
+            key: 9,
+            handler: function(range) {
+              quill.insertText(range.index, '\t');
+              quill.setSelection(range.index + 1);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 2. Al cargar la página, mete el código previo
+  const initial = `{{ code | replace("\n", "\\n") | replace("\t", "\\t") }}`;
+  // Pero Quill.getText() espera saltos reales, así que:
+  const initialCode = {{ code | tojson }};
+  quill.setText(initialCode);
+  //quill
+
+  // 3. Form submit → vuelca texto plano limpio
+  const form = document.getElementById('codeForm');
+  form.addEventListener('submit', () => {
+    document.getElementById('codeInput').value = quill.getText();
+  });
+
+  // 4. Después del post, justo tras la render del servidor...
+  window.addEventListener('DOMContentLoaded', () => {
+    // Recupera el array de tokens embebido por Jinja
+    const tokens = {{ tokens_json | tojson }};
+    // Define colores según tipo
+    const colorMap = {
+      1000: '#ab0ed6', // keyword
+      2000: '#e36209', // operator
+      3000: '#24292e', // punctuation
+      4000: '#005cc5', // curly-brace
+      5000: '#079c29', // bracket
+      6000: '#6f42c1', // identifier
+      7000: '#005cc5', // integer
+      8000: '#005cc5', // float
+    };
+    // Aplica formato a cada token
+    tokens.forEach(t => {
+      const color = colorMap[t.type];
+      
+      if (color && t.length > 0) {
+        quill.formatText(t.index, t.length, { color });
+      }
+    });
+  });
+
+const errors = {{ errors_json | tojson }};
+errors.forEach(e => {
+  // aplicamos formato underline + color rojo
+  quill.formatText(e.index, e.length, {
+    underline: true,
+    color: '#ff0000'
+  });
+});
+</script>
+
+
 </body>
 </html>

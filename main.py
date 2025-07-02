@@ -15,6 +15,8 @@ automata = init_automata()
 def form(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
+        "tokens_json": [],
+        "errors_json": [],
         "code": ""  # el primer cuadro vacío para cargar ambos en la vista
     })
 
@@ -25,46 +27,25 @@ def form(request: Request):
 async def analyze(request: Request, code: str = Form(...)):
     #ejemplo de función y así, pasas el code que es str
     print(repr(code))
+    code = code.replace("\r", "")
     tokens, errors = main(automata, code)
-
-    type_names = {
-        6000: "identifier",
-        1000: "keyword",
-        3000: "punctuation",
-        2000: "operator",
-        4000: "curly-brace",
-        5000: "bracket",
-        7000: "integer",
-        8000: "float"
-    }
-
-    #Función para escapar HTML (evitar inyección)
-    def escape_html(s: str) -> str:
-        return (s.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;"))
-
-    #Construye el HTML coloreado
-    highlighted_parts = []
-    for tok in tokens:
-        raw = escape_html(tok.value)
-
-        cls = type_names.get((tok.type // 1000) * 1000)
-        
-        print(cls)
-        if cls:
-            highlighted_parts.append(f'<span class="token-{cls}">{raw}</span>')
-        else:
-            highlighted_parts.append(raw)
-    highlighted_code = "".join(highlighted_parts)
 
     part1 = "\n".join([str(token.type) for token in tokens])
     part2 = "\n".join([f"{error.type} error: {error.value} at row {error.row} column {error.column}\n" for error in errors])
     result_string = f"{part1}\n\n{part2}"
 
+    # Prepara tokens mínimos para el cliente
+    simple_tokens = [
+      {"index": t.index, "length": t.length, "type": (t.type // 1000)*1000}
+      for t in tokens
+    ]
+
+    simple_errors = [{"index": err.index, "length": err.length} for err in errors]
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "code": code,
         "result": result_string,
-        "highlighted": highlighted_code
+        "tokens_json": simple_tokens,
+        "errors_json": simple_errors
     })

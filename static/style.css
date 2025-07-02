@@ -299,16 +299,100 @@ td {
   color: #2F4F4F;
 }
 
+
+
+/* Oculta la toolbar de Quill */
+.ql-toolbar { display: none; }
+/* Mismo estilo que tu editor */
+#editor .ql-editor {
+  background: #F5F5DC;
+  border: 4px solid #8B4513;
+  padding: 15px;
+  white-space: pre-wrap; /* respeta saltos */
+  tab-size: 4;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 1.4;
+  min-height: 100%;
+  color: #2F4F4F;
+  outline: none;
+}
+
+.left form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#editor {
+  flex: 1;
+  /* scroll vertical y horizontal */
+  overflow: auto;
+}
+
+#editor .ql-editor {
+  height: 100%;
+  /* scroll vertical y horizontal */
+  overflow: auto;
+  /* si quieres que no rompa líneas automáticamente, cambia a:
+     white-space: pre;
+     en lugar de pre-wrap */
+}
+
+.ql-editor u {
+  text-decoration-color: red;  
+}
+
 /* Colores según el tipo de token */
-.token-keyword      { color: #d73a49; }
+.token-keyword      { color: #ab0ed6; }
 .token-identifier   { color: #6f42c1; }
 .token-punctuation  { color: #24292e; }
 .token-operator     { color: #e36209; }
 .token-curly-brace  { color: #005cc5; }
-.token-bracket      { color: #22863a; }
+.token-bracket      { color: #079c29; }
 .token-integer      { color: #005cc5; }
 .token-float        { color: #005cc5; }
 
+/* 1. Oculta el panel derecho por defecto */
+.right.hidden {
+  display: none;
+}
+
+/* 2. Ajusta .left para que ocupe todo cuando .right esté oculto */
+.container {
+  display: flex;
+}
+.container .left {
+  flex: 1;
+}
+.container .right {
+  flex: 1;
+}
+
+/* 3. (Opcional) Estilo para el botón de toggle */
+.toggle-container {
+  text-align: right;
+  margin: 0 20px;
+}
+.toggle-container button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  background: linear-gradient(45deg, #FF8C00, #FFD700);
+  border: 4px solid #B8860B;
+  color: #000;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 6px 0 #B8860B,
+    0 10px 15px rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+}
+.toggle-container button:hover {
+  background: linear-gradient(45deg, #FFD700, #FFF8DC);
+  transform: translateY(2px);
+}
 
 
 /* Responsive */
