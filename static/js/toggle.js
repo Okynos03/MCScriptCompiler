@@ -7,17 +7,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateInitialState() {
     if (textarea.value.trim() === '') {
       rightPanel.classList.add('hidden');
-      toggleBtn.textContent = 'Mostrar Análisis';
+      toggleBtn.textContent = 'Mostrar Consola';
     } else {
       rightPanel.classList.remove('hidden');
-      toggleBtn.textContent = 'Ocultar Análisis';
+      toggleBtn.textContent = 'Ocultar Consola';
     }
   }
 
   // Al hacer clic, alterna visibilidad
   toggleBtn.addEventListener('click', () => {
     const hidden = rightPanel.classList.toggle('hidden');
-    toggleBtn.textContent = hidden ? 'Mostrar Análisis' : 'Ocultar Análisis';
+    toggleBtn.textContent = hidden ? 'Mostrar Consola' : 'Ocultar Consola';
   });
 
   updateInitialState();

@@ -18,9 +18,14 @@ const colorMap = {
 };
 
 async function updateHighlight() {
-  const text = quill.getText();
+  let text = quill.getText(0, quill.getLength() - 1);
+  // o bien, si quieres barrer todo CR/LF:
+  text = text.replace(/\r\n/g, "\n").replace(/^\n+|\n+$/g, ""); 
+  //const text = quill.getText();
   const form = new URLSearchParams();
+  
   form.append('code', text);
+  
 
   const resp = await fetch('/lex/json', {
     method: 'POST',
@@ -46,7 +51,9 @@ async function updateHighlight() {
       color: '#ff0000'
     });
   });
+
 }
+
 
 //Escucha cambios cada 300 ms
 quill.on('text-change', debounce(updateHighlight, 300));

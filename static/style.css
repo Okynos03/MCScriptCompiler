@@ -303,7 +303,6 @@ td {
 
 /* Oculta la toolbar de Quill */
 .ql-toolbar { display: none; }
-/* Mismo estilo que tu editor */
 #editor .ql-editor {
   background: #F5F5DC;
   border: 4px solid #8B4513;
@@ -311,7 +310,8 @@ td {
   white-space: pre-wrap; /* respeta saltos */
   tab-size: 4;
   font-family: 'Courier New', monospace;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: bold;
   line-height: 1.4;
   min-height: 100%;
   color: #2F4F4F;

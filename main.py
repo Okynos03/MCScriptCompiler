@@ -4,13 +4,27 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from Compiler.main import *
 from fastapi.responses import JSONResponse
-
+import re
 
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 automata = init_automata()
+
+def clean_code(code: str) -> str:
+    """
+    - Elimina todos los '\r'
+    - Sustituye NBSP (U+00A0) por espacio normal
+    - Quita saltos de línea al inicio y final, pero respeta los intermedios
+    """
+    # 1) Quitar retornos de carro
+    code = code.replace("\r", "")
+    # 2) Sustituir NBSP por espacio (si quieres borrarlo por completo, usa "")
+    code = code.replace("\xa0", " ")
+    # 3) Eliminar saltos de línea sobrantes al principio y al final
+    code = code.strip("\n")
+    return code
 
 #Aquí no te metas porque sólo carga el html inicial
 @app.get("/", response_class=HTMLResponse)
@@ -59,8 +73,11 @@ async def analyze(request: Request, code: str = Form(...)):
 
 @app.post("/lex/json")
 async def lex_json(code: str = Form(...)):
+    code = code.strip("\n")
+    code = code.replace("\xa0", " ")
     code = code.replace("\r", "")
-    tokens, errors = main(automata, code)
+    #print(repr(code))
+    tokens, errors = lexical(automata, code)
 
     simple_tokens = [
         {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
@@ -70,7 +87,7 @@ async def lex_json(code: str = Form(...)):
         {"index": e.index, "length": e.length}
         for e in errors
     ]
-
+    print(simple_tokens)
     return JSONResponse({
         "tokens": simple_tokens,
         "errors": simple_errors
