@@ -42,10 +42,8 @@ def form(request: Request):
 @app.post("/lex", response_class=HTMLResponse)
 async def analyze(request: Request, code: str = Form(...)):
     #ejemplo de función y así, pasas el code que es str
-    print(repr(code))
     code = code.replace("\r", "")
     code = code.replace("\xa0", "")
-    print(repr(code))
     tokens, errors = lexical(automata, code)
 
     part1 = "\n".join([str(token.type) for token in tokens])
@@ -61,20 +59,21 @@ async def analyze(request: Request, code: str = Form(...)):
     simple_errors = [{"index": err.index, "length": err.length} for err in errors]
 
 
-    string_ast = syntax(tokens)
+    string_ast, syntax_errors = syntax(tokens)
+    string_syntax_errors = ""
+    for error in syntax_errors:
+        string_syntax_errors += error.value + "\n"
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "code": code,
-        "result": string_ast,
+        "result": string_syntax_errors if len(syntax_errors) > 0 else string_ast,
         "tokens_json": simple_tokens,
         "errors_json": simple_errors
     })
 
 @app.post("/lex/json")
 async def lex_json(code: str = Form(...)):
-    code = code.strip("\n")
-    code = code.replace("\xa0", " ")
     code = code.replace("\r", "")
     #print(repr(code))
     tokens, errors = lexical(automata, code)
@@ -87,7 +86,7 @@ async def lex_json(code: str = Form(...)):
         {"index": e.index, "length": e.length}
         for e in errors
     ]
-    print(simple_tokens)
+
     return JSONResponse({
         "tokens": simple_tokens,
         "errors": simple_errors

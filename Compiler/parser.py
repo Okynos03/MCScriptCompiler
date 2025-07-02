@@ -1,6 +1,7 @@
 from Compiler.ast_nodes import *
 from Compiler.Token import Token
 from static.series import *
+from Compiler.Errors import *
 
 class DummyToken:
     def __init__(self):
@@ -12,42 +13,52 @@ class Parser:
         self.tokens = tokens
         self.pos = 0
         self.sync_tokens = [SEMICOLON, RBRACE]
+        self.errors = []
 
     def current(self):
         if self.pos < len(self.tokens):
             return self.tokens[self.pos]
         else:
-            return Token(EOF, '', -1, -1)
+            return Token(EOF, '', -1, -1, -1, -1)
 
     def match(self, expected_type):
         if self.current().type == expected_type:
             self.pos += 1
+        elif self.current().type == EOF:
+            self.error(f"Se esperaba {expected_type}, pero se alcanzó EOF.")
+            raise Exception("Fin del archivo inesperado")
         else:
             self.error(f"Se esperaba tipo {expected_type}, se encontró {self.current().type}")
 
     def error(self, mensaje):
-        print(f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})")
+        # print(f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})")
+        self.errors.append(Error("Syntax", f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})", -1, -1, self.pos, -1))
         self.panic()
 
     def panic(self):
+        if self.current().type == EOF:
+            return
         while self.current().type not in self.sync_tokens and self.current().type != EOF:
             self.pos += 1
-        if self.current().type in self.sync_tokens:
+        if self.current().type in self.sync_tokens and self.current().type != RBRACE:
             self.pos += 1
-        elif self.current().type == EOF:
-            return
 
     def parse(self):
-        if self.current().type == SPAWNEAR:
-            self.match(SPAWNEAR)
-            self.match(LBRACE)
-            sentencias = self.lista_sentencias()
-            self.match(RBRACE)
-            self.match(MORIR)
-            self.match(SEMICOLON)
-            return Programa(sentencias)
-        else:
-            self.error("Se esperaba SPAWNEAR al inicio del programa")
+        try:
+            if self.current().type == SPAWNEAR:
+                self.match(SPAWNEAR)
+                self.match(LBRACE)
+                sentencias = self.lista_sentencias()
+                self.match(RBRACE)
+                self.match(MORIR)
+                self.match(SEMICOLON)
+                return Programa(sentencias)
+            else:
+                self.error("Se esperaba SPAWNEAR al inicio del programa")
+                return Programa([])
+        except Exception as e:
+            # print(f"[Fatal] {e}")
+            self.errors.append(Error("Syntax", f"[Fatal] {e}", -1, -1, self.pos, -1))
             return Programa([])
 
     def lista_sentencias(self):
