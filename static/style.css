@@ -13,6 +13,12 @@ body {
   background-attachment: fixed;
   position: relative;
   overflow-x: hidden;
+  transition: all 0.3s ease;
+}
+
+/* MODO OSCURO - Variables CSS */
+body.dark-mode {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
 /* Efecto de nubes flotantes */
@@ -30,6 +36,14 @@ body::before {
   animation: float 20s infinite linear;
   pointer-events: none;
   z-index: 0;
+  transition: opacity 0.3s ease;
+}
+
+body.dark-mode::before {
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(100,149,237,0.3) 8px, transparent 8px),
+    radial-gradient(circle at 80% 30%, rgba(100,149,237,0.2) 12px, transparent 12px),
+    radial-gradient(circle at 40% 10%, rgba(100,149,237,0.25) 10px, transparent 10px);
 }
 
 @keyframes float {
@@ -40,8 +54,8 @@ body::before {
 .header {
   display: flex;
   align-items: center;
-  justify-content: center; /* centrar todo el bloque */
-  gap: 12px;               /* espacio entre logo y texto */
+  justify-content: center;
+  gap: 12px;
   background: linear-gradient(45deg, #8B4513, #A0522D);
   border: 4px solid #654321;
   margin: 20px;
@@ -53,15 +67,26 @@ body::before {
     0 12px 20px rgba(0,0,0,0.3);
   position: relative;
   z-index: 1;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .header {
+  background: linear-gradient(45deg, #2c1810, #3d2317);
+  border-color: #1a0f0a;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.1),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 8px 0 #1a0f0a,
+    0 12px 20px rgba(0,0,0,0.5);
 }
 
 .logo {
-  max-height: 48px;  /* no crece más que el header */
+  max-height: 48px;
   width: auto;
 }
 
 .header-content {
-  text-align: center;  /* mantiene el texto centrado */
+  text-align: center;
 }
 
 .header-content h1 {
@@ -72,15 +97,30 @@ body::before {
     -2px -2px 0 #000,
     2px -2px 0 #000,
     -2px 2px 0 #000;
-  margin-bottom: 6px;  /* menos separación al subtítulo */
+  margin-bottom: 6px;
+  transition: color 0.3s ease;
+}
+
+body.dark-mode .header-content h1 {
+  color: #6495ED;
+  text-shadow: 
+    2px 2px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    0 0 10px rgba(100,149,237,0.5);
 }
 
 .header-content p {
   color: #FFFFFF;
   font-size: 8px;
   text-shadow: 1px 1px 0 #000;
+  transition: color 0.3s ease;
 }
 
+body.dark-mode .header-content p {
+  color: #B0C4DE;
+}
 
 .container {
   display: flex;
@@ -102,6 +142,18 @@ body::before {
     0 8px 0 #006400,
     0 12px 20px rgba(0,0,0,0.3);
   position: relative;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .left,
+body.dark-mode .right {
+  background: linear-gradient(45deg, #1e3a1e, #2d4a2d);
+  border-color: #0a2f0a;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.1),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 8px 0 #0a2f0a,
+    0 12px 20px rgba(0,0,0,0.5);
 }
 
 .left::before, .right::before {
@@ -121,6 +173,17 @@ body::before {
   pointer-events: none;
 }
 
+body.dark-mode .left::before,
+body.dark-mode .right::before {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(100,149,237,0.1) 2px,
+    rgba(100,149,237,0.1) 4px
+  );
+}
+
 .panel-title {
   color: #FFFFFF;
   font-size: 12px;
@@ -130,6 +193,13 @@ body::before {
   background: rgba(0,0,0,0.3);
   padding: 8px;
   border: 2px solid #004400;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .panel-title {
+  color: #B0C4DE;
+  background: rgba(0,0,0,0.5);
+  border-color: #1a1a2e;
 }
 
 textarea {
@@ -146,6 +216,16 @@ textarea {
     inset -2px -2px 4px rgba(255,255,255,0.3);
   color: #2F4F4F;
   line-height: 1.4;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode textarea {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e6e6e6;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.5),
+    inset -2px -2px 4px rgba(255,255,255,0.1);
 }
 
 textarea:focus {
@@ -157,9 +237,21 @@ textarea:focus {
     0 0 0 2px #FFD700;
 }
 
+body.dark-mode textarea:focus {
+  border-color: #6495ED;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.5),
+    inset -2px -2px 4px rgba(255,255,255,0.1),
+    0 0 0 2px #6495ED;
+}
+
 textarea::placeholder {
   color: #8B7355;
   font-style: italic;
+}
+
+body.dark-mode textarea::placeholder {
+  color: #888;
 }
 
 .button-container {
@@ -184,6 +276,18 @@ button {
   text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
 }
 
+body.dark-mode button {
+  background: linear-gradient(45deg, #4169E1, #6495ED);
+  border-color: #2E4BCE;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 6px 0 #2E4BCE,
+    0 10px 15px rgba(0,0,0,0.5);
+}
+
 button:hover {
   background: linear-gradient(45deg, #FFD700, #FFF8DC);
   transform: translateY(2px);
@@ -192,6 +296,16 @@ button:hover {
     inset -2px -2px 0 rgba(0,0,0,0.3),
     0 4px 0 #B8860B,
     0 8px 15px rgba(0,0,0,0.3);
+}
+
+body.dark-mode button:hover {
+  background: linear-gradient(45deg, #6495ED, #87CEEB);
+  transform: translateY(2px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 4px 0 #2E4BCE,
+    0 8px 15px rgba(0,0,0,0.5);
 }
 
 button:active {
@@ -203,6 +317,14 @@ button:active {
     0 4px 10px rgba(0,0,0,0.3);
 }
 
+body.dark-mode button:active {
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 2px 0 #2E4BCE,
+    0 4px 10px rgba(0,0,0,0.5);
+}
+
 /* Decoraciones de bloques */
 .block-decoration {
   position: absolute;
@@ -211,6 +333,13 @@ button:active {
   background: #8B4513;
   border: 2px solid #654321;
   box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .block-decoration {
+  background: #2c1810;
+  border-color: #1a0f0a;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.1);
 }
 
 .block-decoration.top-left {
@@ -248,6 +377,11 @@ button:active {
   animation: sparkle 2s infinite;
   pointer-events: none;
   z-index: 0;
+  transition: background-color 0.3s ease;
+}
+
+body.dark-mode .sparkle {
+  background: #6495ED;
 }
 
 .sparkle:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
@@ -265,6 +399,15 @@ table {
   box-shadow: 
     inset 2px 2px 4px rgba(0,0,0,0.3),
     inset -2px -2px 4px rgba(255,255,255,0.3);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode table {
+  background: #2d2d2d;
+  border-color: #444;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.5),
+    inset -2px -2px 4px rgba(255,255,255,0.1);
 }
 
 th, td {
@@ -273,6 +416,12 @@ th, td {
   text-align: left;
   font-family: 'Courier New', monospace;
   font-size: 10px;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode th,
+body.dark-mode td {
+  border-color: #444;
 }
 
 th {
@@ -283,9 +432,19 @@ th {
   text-shadow: 1px 1px 0 #000;
 }
 
+body.dark-mode th {
+  background: linear-gradient(45deg, #2c1810, #3d2317);
+  color: #6495ED;
+}
+
 td {
   background: rgba(245, 245, 220, 0.8);
   color: #2F4F4F;
+}
+
+body.dark-mode td {
+  background: rgba(45, 45, 45, 0.8);
+  color: #e6e6e6;
 }
 
 .highlighted {
@@ -297,17 +456,23 @@ td {
   font-family: 'Courier New', monospace;
   font-size: 12px;
   color: #2F4F4F;
+  transition: all 0.3s ease;
 }
 
-
+body.dark-mode .highlighted {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e6e6e6;
+}
 
 /* Oculta la toolbar de Quill */
 .ql-toolbar { display: none; }
+
 #editor .ql-editor {
   background: #F5F5DC;
   border: 4px solid #8B4513;
   padding: 15px;
-  white-space: pre-wrap; /* respeta saltos */
+  white-space: pre-wrap;
   tab-size: 4;
   font-family: 'Courier New', monospace;
   font-size: 18px;
@@ -316,6 +481,13 @@ td {
   min-height: 100%;
   color: #2F4F4F;
   outline: none;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode #editor .ql-editor {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e6e6e6;
 }
 
 .left form {
@@ -326,24 +498,19 @@ td {
 
 #editor {
   flex: 1;
-  /* scroll vertical y horizontal */
   overflow: auto;
 }
 
 #editor .ql-editor {
   height: 100%;
-  /* scroll vertical y horizontal */
   overflow: auto;
-  /* si quieres que no rompa líneas automáticamente, cambia a:
-     white-space: pre;
-     en lugar de pre-wrap */
 }
 
 .ql-editor u {
   text-decoration-color: red;  
 }
 
-/* Colores según el tipo de token */
+/* Colores según el tipo de token - se mantienen igual en ambos modos */
 .token-keyword      { color: #ab0ed6; }
 .token-identifier   { color: #6f42c1; }
 .token-punctuation  { color: #24292e; }
@@ -353,12 +520,11 @@ td {
 .token-integer      { color: #005cc5; }
 .token-float        { color: #005cc5; }
 
-/* 1. Oculta el panel derecho por defecto */
+/* Panel derecho oculto por defecto */
 .right.hidden {
   display: none;
 }
 
-/* 2. Ajusta .left para que ocupe todo cuando .right esté oculto */
 .container {
   display: flex;
 }
@@ -369,11 +535,15 @@ td {
   flex: 1;
 }
 
-/* 3. (Opcional) Estilo para el botón de toggle */
+/* Estilo para el contenedor de botones toggle */
 .toggle-container {
   text-align: right;
   margin: 0 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
+
 .toggle-container button {
   font-family: 'Press Start 2P', monospace;
   font-size: 10px;
@@ -389,11 +559,28 @@ td {
     0 10px 15px rgba(0,0,0,0.3);
   transition: all 0.1s ease;
 }
+
+body.dark-mode .toggle-container button {
+  background: linear-gradient(45deg, #4169E1, #6495ED);
+  border-color: #2E4BCE;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.2),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 6px 0 #2E4BCE,
+    0 10px 15px rgba(0,0,0,0.5);
+}
+
 .toggle-container button:hover {
   background: linear-gradient(45deg, #FFD700, #FFF8DC);
   transform: translateY(2px);
 }
 
+body.dark-mode .toggle-container button:hover {
+  background: linear-gradient(45deg, #6495ED, #87CEEB);
+  transform: translateY(2px);
+}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -402,12 +589,14 @@ td {
     height: auto;
   }
   
- .logo {
+  .logo {
     max-height: 32px;
   }
+  
   .header-content h1 {
     font-size: 16px;
   }
+  
   .header-content p {
     font-size: 6px;
   }
@@ -419,5 +608,10 @@ td {
   button {
     font-size: 8px;
     padding: 10px 20px;
+  }
+  
+  .toggle-container {
+    flex-direction: column;
+    align-items: flex-end;
   }
 }
