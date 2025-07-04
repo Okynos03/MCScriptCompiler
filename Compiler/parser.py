@@ -21,17 +21,19 @@ class Parser:
         else:
             return Token(EOF, '', -1, -1, -1, -1)
 
-    def match(self, expected_type):
+    def match(self, expected_type, soft = False):
         if self.current().type == expected_type:
             self.pos += 1
         elif self.current().type == EOF:
             self.error(f"Se esperaba {expected_type}, pero se alcanzó EOF.")
             raise Exception("Fin del archivo inesperado")
         else:
+            if soft:
+                return
             self.error(f"Se esperaba tipo {expected_type}, se encontró {self.current().type}")
 
     def error(self, mensaje):
-        # print(f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})")
+        #print(f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})")
         self.errors.append(Error("Syntax", f"[Error] {mensaje} en token {self.current().type} (posición {self.pos})", -1, -1, self.pos, -1))
         self.panic()
 
@@ -57,7 +59,7 @@ class Parser:
                 self.error("Se esperaba SPAWNEAR al inicio del programa")
                 return Programa([])
         except Exception as e:
-            # print(f"[Fatal] {e}")
+            #print(f"[Fatal] {e}")
             self.errors.append(Error("Syntax", f"[Fatal] {e}", -1, -1, self.pos, -1))
             return Programa([])
 
@@ -76,7 +78,14 @@ class Parser:
         elif tipo in [BLOQUE, LOSA, PALANCA, LIBRO, HOJA, COFRE, ITEM]:
             return self.sentencia_declaracion()
         elif tipo == ID:
-            return self.sentencia_asignacion()
+            pos_inicial = self.pos
+            try:
+                return self.sentencia_asignacion()
+            except Exception:
+                self.pos = pos_inicial
+                expr = self.expresion()
+                self.match(SEMICOLON)
+                return SentenciaExpresion(expr)
         elif tipo == SI:
             return self.sentencia_si()
         elif tipo == MIENTRAS:
@@ -123,20 +132,45 @@ class Parser:
         self.match(ID)
         if self.current().type == ASSIGN:
             self.match(ASSIGN)
-            valor = self.expresion()
-            self.match(SEMICOLON)
-            return SentenciaDeclaracion(tipo, nombre, valor)
+            if self.current().type == LSQB:
+                self.match(LSQB)
+                lista = self.lista_factores()
+                self.match(RSQB)
+                self.match(SEMICOLON)
+                return SentenciaDeclaracion(tipo, nombre, lista, es_lista=True)
+            else:
+                valor = self.expresion()
+                self.match(SEMICOLON)
+                return SentenciaDeclaracion(tipo, nombre, valor, es_lista=False)
         else:
             self.match(SEMICOLON)
-            return SentenciaDeclaracion(tipo, nombre)
+            return SentenciaDeclaracion(tipo, nombre, valor=None, es_lista=False)
 
     def sentencia_asignacion(self):
         nombre = self.current().value
         self.match(ID)
+        if self.current().type != ASSIGN:
+            self.match(ASSIGN, True)
+            if self.current().type == LSQB:
+                self.match(LSQB)
+                indice = self.expresion()
+                self.match(RSQB)
+                self.match(ASSIGN)
+                valor = self.expresion()
+                self.match(SEMICOLON)
+                return SentenciaAsignacion(nombre, valor, indice=indice, es_acceso=True)
+            raise Exception
         self.match(ASSIGN)
-        valor = self.expresion()
-        self.match(SEMICOLON)
-        return SentenciaAsignacion(nombre, valor)
+        if self.current().type == LSQB:  # [
+            self.match(LSQB)
+            lista = self.lista_factores()
+            self.match(RSQB)
+            self.match(SEMICOLON)
+            return SentenciaAsignacion(nombre, lista, es_lista=True)
+        else:
+            valor = self.expresion()
+            self.match(SEMICOLON)
+            return SentenciaAsignacion(nombre, valor, es_lista=False)
 
     def sentencia_tp(self):
         self.match(TELETRANSPORTAR)
@@ -271,7 +305,10 @@ class Parser:
                 return ExpresionIdentificador(nombre)
         elif tipo in [INT, FLOAT]:
             self.match(tipo)
-            return ExpresionLiteral(valor)
+            if tipo == INT:
+                return ExpresionLiteral(int(valor)) # hice mod aqui a ver si jala
+            else:
+                return ExpresionLiteral(float(valor))
         elif tipo in [ENCENDIDO, APAGADO]:
             self.match(tipo)
             return ExpresionBooleana(valor)
@@ -279,6 +316,11 @@ class Parser:
             return self.cadena_texto()
         elif tipo in [ANTORCHAR, CRAFTEAR, ROMPER, APILAR, REPARTIR, SOBRAR, ENCANTAR, CHAT]:
             return self.funcion_especial()
+        elif tipo == LSQB:
+            self.match(LSQB)
+            factores = self.lista_factores()
+            self.match(RSQB)
+            return ListaFactores(factores)
         else:
             self.error("Factor inválido")
             return ExpresionLiteral(0)
@@ -332,5 +374,25 @@ class Parser:
 
         return ExpresionCadena(texto, concatenaciones)
 
+    #esto se lo pedi a chat pq fue de ultimo jaja
+    def lista_factores(self):
+        factores = []
+        primeros_tokens_factor = [
+            PLUS, MINUS, LPAREN, ID, INT, FLOAT, ENCENDIDO, APAGADO, QUOTE,
+            ANTORCHAR, CRAFTEAR, ROMPER, APILAR, REPARTIR, SOBRAR, ENCANTAR, CHAT, LSQB
+        ]
+        if self.current().type in primeros_tokens_factor:
+            factores.append(self.factor())
+            factores.extend(self.resto_factores())
+
+        return ListaFactores(factores)
+
+    #si mantenemos lista de factores
+    def resto_factores(self):
+        factores = []
+        while self.current().type == COMMA:
+            self.match(COMMA)
+            factores.append(self.factor())
+        return factores
 
 

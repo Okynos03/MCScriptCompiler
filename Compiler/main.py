@@ -3,6 +3,7 @@ from Compiler.textfile import TextFile
 from Compiler.algorithm import Automaton
 from Compiler.parser import Parser
 from Compiler.pretty_print import pretty_print
+from Compiler.semantic import AnalizadorSemantico
 
 def init_automata():
     excel = Excel()
@@ -47,4 +48,10 @@ def syntax(tokens):
     ast = parser.parse()
     string_ast = pretty_print(ast)
 
-    return string_ast, parser.errors
+    return string_ast, parser.errors, ast
+
+def semantic(ast):
+    sem = AnalizadorSemantico()
+    sem.visitar_Programa(ast)
+
+    return sem.entorno.imprimir_historial(), sem.errores

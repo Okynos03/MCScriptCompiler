@@ -10,16 +10,24 @@ class Programa(Nodo):
 class SentenciaVacia(Nodo):
     pass
 
-class SentenciaDeclaracion(Nodo):
-    def __init__(self, tipo, nombre, valor=None):
-        self.tipo = tipo
-        self.nombre = nombre
-        self.valor = valor  # puede ser None
+class ListaFactores:
+    def __init__(self, factores):
+        self.factores = factores  # lista de nodos factor
 
-class SentenciaAsignacion(Nodo):
-    def __init__(self, nombre, valor):
-        self.nombre = nombre
-        self.valor = valor
+class SentenciaDeclaracion:
+    def __init__(self, tipo, nombre, valor=None, es_lista=False):
+        self.tipo = tipo       # token tipo
+        self.nombre = nombre   # str
+        self.valor = valor     # nodo expresión o ListaFactores o None
+        self.es_lista = es_lista
+
+class SentenciaAsignacion:
+    def __init__(self, nombre, valor, es_lista=False, indice=None, es_acceso=False):
+        self.nombre = nombre    # str
+        self.valor = valor      # nodo expresión o ListaFactores
+        self.es_lista = es_lista
+        self.indice = indice
+        self.es_acceso = es_acceso
 
 class SentenciaExpresion(Nodo):
     def __init__(self, expresion):

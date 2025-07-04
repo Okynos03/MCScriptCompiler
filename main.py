@@ -57,28 +57,34 @@ async def analyze(request: Request, code: str = Form(...)):
       for t in tokens
     ]
 
-    for t in tokens:
-        # Serie: 1000, 2000, 3000…
-        serie = (t.type // 1000) * 1000
-        # El substring real desde el código
-        snippet = code[t.index : t.index + t.length]
-        print(f"Token en índice {t.index} (longitud {t.length}): "
-            f"'{snippet}' → serie {serie}")
+    # for t in tokens:
+    #     # Serie: 1000, 2000, 3000…
+    #     serie = (t.type // 1000) * 1000
+    #     # El substring real desde el código
+    #     snippet = code[t.index : t.index + t.length]
+    #     print(f"Token en índice {t.index} (longitud {t.length}): "
+    #         f"'{snippet}' → serie {serie}")
 
     simple_errors = [{"index": err.index, "length": err.length} for err in errors]
 
 
-    string_ast, syntax_errors = syntax(tokens)
+    string_result, syntax_errors, ast = syntax(tokens)
     syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
 
-    string_syntax_errors = ""
+    string_errors = ""
     for error in syntax_errors:
-        string_syntax_errors += error.value + "\n"
+        string_errors += error.value + "\n"
+
+    if len(syntax_errors) == 0:
+        string_result, sem_errors = semantic(ast)
+        if len(sem_errors) > 0:
+            for error in sem_errors:
+                string_errors += error+ "\n"
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "code": code,
-        "result": string_syntax_errors if len(syntax_errors) > 0 else string_ast,
+        "result": string_errors if len(string_errors) > 1 else string_result,
         "tokens_json": simple_tokens,
         "errors_json": simple_errors,
         "errors_s_json": syn_errors_l
@@ -99,7 +105,7 @@ async def lex_json(code: str = Form(...)):
         for e in errors
     ]
 
-    string_ast, syntax_errors = syntax(tokens)
+    string_ast, syntax_errors, _ = syntax(tokens)
     syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
 
     return JSONResponse({
