@@ -73,7 +73,7 @@ class Parser:
         tipo = self.current().type
         if tipo == PORTAL:
             return self.declaracion_funcion()
-        elif tipo in [BLOQUE, LOSA, PALANCA, LIBRO, HOJA, COFRE]:
+        elif tipo in [BLOQUE, LOSA, PALANCA, LIBRO, HOJA, COFRE, ITEM]:
             return self.sentencia_declaracion()
         elif tipo == ID:
             return self.sentencia_asignacion()

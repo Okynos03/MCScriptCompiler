@@ -1,6 +1,6 @@
 IDENTIFIER                              MEMORY
 --------------------------------------------------
-a                                       6001
+dembele                                 6001
 
 
 STRING                                  MEMORY
