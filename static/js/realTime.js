@@ -9,7 +9,7 @@ function debounce(fn, delay) {
 const colorMap = {
   1000: '#ab0ed6', // keyword
   2000: '#e36209', // operator
-  3000: '#24292e', // punctuation
+  3000: '#27c60b', // punctuation
   4000: '#005cc5', // curly-brace
   5000: '#079c29', // bracket
   6000: '#6f42c1', // identifier

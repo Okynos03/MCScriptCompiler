@@ -11,7 +11,8 @@
   <script src="/static/js/toggle.js" defer></script>
   <script src="/static/js/realTime.js" defer></script>
   <script src="/static/js/darkMode.js" defer></script>
-  <script src="/static/js/darkMode.js" defer></script>
+  <script src="/static/js/lineNumbers.js" defer></script>
+
 </head>
 <body>
   <!-- Partículas de decoración -->
@@ -21,9 +22,7 @@
   <div class="sparkle"></div>
   
   <div class="header">
-    <!-- Logo en la izquierda -->
     <img src="/static/images/logoMCS.png" alt="MCScript Logo" class="logo">
-    <!-- Contenedor de título y subtítulo centrados -->
     <div class="header-content">
       <h1>🎮 MCScript Compiler 🎮</h1>
       <p>Construye tu código bloque por bloque</p>
@@ -36,7 +35,6 @@
   </div>
   
   <div class="container">
-    <!-- Zona izquierda: cuadro editable -->
     <div class="left">
       <div class="block-decoration top-left"></div>
       <div class="block-decoration top-right"></div>
@@ -46,9 +44,11 @@
       <div class="panel-title">📝 Workbench de Código</div>
       <form id="codeForm" action="/lex" method="post">
         <!-- Contenedor Quill -->
-        <div id="editor"></div>
+        <div class="editor-container">
+          <div class="line-numbers"></div>
+          <div id="editor"></div>
+        </div>
 
-        <!-- Campo oculto para enviar el código plano -->
         <textarea name="code" id="codeInput" hidden></textarea>
 
         <div class="button-container">
@@ -71,11 +71,9 @@
   </div>
 
 <script>
-  // Carga inicial de Quill
   const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
-      // quita la toolbar
       toolbar: false,
       keyboard: {
         bindings: {
@@ -95,7 +93,39 @@
   const initial = `{{ code | replace("\n", "\\n") | replace("\t", "\\t") }}`;
   const initialCode = {{ code | tojson }};
   quill.setText(initialCode);
-  //quill
+
+  // NUEVA FUNCIONALIDAD: Sincronizar scroll entre editor y números de línea
+  const editor = document.querySelector('#editor .ql-editor');
+  const lineNumbers = document.querySelector('.line-numbers');
+  
+  function updateLineNumbers() {
+    const text = quill.getText();
+    const lines = text.split('\n');
+    const lineCount = lines.length;
+    
+    let numbersHTML = '';
+    for (let i = 1; i <= lineCount; i++) {
+      numbersHTML += `<div class="line-number">${i}</div>`;
+    }
+    lineNumbers.innerHTML = numbersHTML;
+  }
+  
+  // Función para sincronizar scroll
+  function syncScroll() {
+    if (editor && lineNumbers) {
+      lineNumbers.scrollTop = editor.scrollTop;
+    }
+  }
+  
+  updateLineNumbers();
+  
+  quill.on('text-change', function() {
+    updateLineNumbers();
+  });
+  
+  editor.addEventListener('scroll', syncScroll);
+  
+  window.addEventListener('resize', syncScroll);
 
   const form = document.getElementById('codeForm');
   form.addEventListener('submit', () => {
@@ -103,19 +133,19 @@
   });
 
   window.addEventListener('DOMContentLoaded', () => {
-
     const tokens = {{ tokens_json | tojson }};
 
     const colorMap = {
       1000: '#ab0ed6', // keyword
       2000: '#e36209', // operator
-      3000: '#24292e', // punctuation
+      3000: '#27c60b', // punctuation
       4000: '#005cc5', // curly-brace
       5000: '#079c29', // bracket
       6000: '#6f42c1', // identifier
       7000: '#005cc5', // integer
       8000: '#005cc5', // float
     };
+    
     // Aplica formato a cada token
     tokens.forEach(t => {
       const color = colorMap[t.type];
@@ -126,23 +156,23 @@
     });
   });
 
-const errors = {{ errors_json | tojson }};
-errors.forEach(e => {
-  // subraya el error lex
-  quill.formatText(e.index, e.length, {
-    underline: true,
-    color: '#ff0000'
+  const errors = {{ errors_json | tojson }};
+  errors.forEach(e => {
+    // subraya el error lex
+    quill.formatText(e.index, e.length, {
+      underline: true,
+      color: '#ff0000'
+    });
   });
-});
 
-const errors_s = {{ errors_s_json | tojson }};
-errors_s.forEach(e => {
-  // subraya el error lex
-  quill.formatText(e.index, e.length, {
-    underline: true,
-    color: '#ff0000'
+  const errors_s = {{ errors_s_json | tojson }};
+  errors_s.forEach(e => {
+    // subraya el error semantico
+    quill.formatText(e.index, e.length, {
+      underline: true,
+      color: '#ff0000'
+    });
   });
-});
 </script>
 
 </body>

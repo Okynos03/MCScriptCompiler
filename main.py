@@ -57,6 +57,14 @@ async def analyze(request: Request, code: str = Form(...)):
       for t in tokens
     ]
 
+    for t in tokens:
+        # Serie: 1000, 2000, 3000…
+        serie = (t.type // 1000) * 1000
+        # El substring real desde el código
+        snippet = code[t.index : t.index + t.length]
+        print(f"Token en índice {t.index} (longitud {t.length}): "
+            f"'{snippet}' → serie {serie}")
+
     simple_errors = [{"index": err.index, "length": err.length} for err in errors]
 
 

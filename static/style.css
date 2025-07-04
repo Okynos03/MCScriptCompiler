@@ -513,7 +513,7 @@ body.dark-mode #editor .ql-editor {
 /* Colores según el tipo de token - se mantienen igual en ambos modos */
 .token-keyword      { color: #ab0ed6; }
 .token-identifier   { color: #6f42c1; }
-.token-punctuation  { color: #24292e; }
+.token-punctuation  { color: #27c60b; }
 .token-operator     { color: #e36209; }
 .token-curly-brace  { color: #005cc5; }
 .token-bracket      { color: #ff0000; }
@@ -580,6 +580,59 @@ body.dark-mode .toggle-container button {
 body.dark-mode .toggle-container button:hover {
   background: linear-gradient(45deg, #6495ED, #87CEEB);
   transform: translateY(2px);
+}
+
+.editor-container {
+  position: relative;
+  display: flex;
+  font-family: monospace;
+  height: calc(100% - 80px);
+  flex: 1;
+}
+/* gutter de números */
+.editor-container .line-numbers {
+  counter-reset: line;
+  text-align: right;
+  font-size: 18px;
+  padding: 15px 6px;
+  user-select: none;
+  color: #888;
+  background: #f5f5f5;
+  border-right: 1px solid #ddd;
+  line-height: 1.4em;
+  white-space: pre;
+  overflow: hidden; 
+  width: 60px;
+  height: 100%;
+}
+
+.editor-container .line-numbers .line-number {
+  height: 1.4em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+.editor-container .ql-container {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-container .ql-editor {
+  height: 100%;
+  overflow-y: auto;
+  padding-top: 15px;
+  padding-left: 12px;
+  line-height: 1.4em;
+  min-height: 100%;
+  max-height: 100%;
+}
+
+body.dark-mode .editor-container .line-numbers {
+  background: #3d3d3d;
+  border-right: 1px solid #555;
+  color: #bbb;
 }
 
 /* Responsive */
