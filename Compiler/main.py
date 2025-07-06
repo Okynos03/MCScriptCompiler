@@ -4,6 +4,7 @@ from Compiler.algorithm import Automaton
 from Compiler.parser import Parser
 from Compiler.pretty_print import pretty_print
 from Compiler.semantic import AnalizadorSemantico
+from Compiler.intermediate import GeneradorIntermedio
 
 def init_automata():
     excel = Excel()
@@ -55,3 +56,9 @@ def semantic(ast):
     sem.visitar_Programa(ast)
 
     return sem.entorno.imprimir_historial(), sem.errores
+
+def intermediate(ast):
+    gen = GeneradorIntermedio()
+    gen.generar(ast)
+
+    return gen.instrucciones

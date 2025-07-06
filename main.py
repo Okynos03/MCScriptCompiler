@@ -75,11 +75,18 @@ async def analyze(request: Request, code: str = Form(...)):
     for error in syntax_errors:
         string_errors += error.value + "\n"
 
+    sem_errors = 0
     if len(syntax_errors) == 0:
         string_result, sem_errors = semantic(ast)
         if len(sem_errors) > 0:
             for error in sem_errors:
-                string_errors += error+ "\n"
+                string_errors += error + "\n"
+
+    if len(sem_errors) == 0:
+        string_result = ""
+        for instruction in intermediate(ast):
+            string_result += instruction + "\n"
+
 
     return templates.TemplateResponse("index.html", {
         "request": request,
