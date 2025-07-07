@@ -115,8 +115,21 @@ class GeneradorIntermedio:
         self.emitir(f"ETIQUETA {etiqueta_fin_bucle}:")
 
     #pendiente
-    def generar_SentenciaPara(self):
-        pass
+    def generar_SentenciaPara(self, nodo):
+        etiqueta_inicio = self.nueva_etiqueta("FOR_START")
+        etiqueta_fin    = self.nueva_etiqueta("FOR_END")
+        self.generar(nodo.inicial)
+        self.emitir(f"# ETIQUETA {etiqueta_inicio}:")
+        cond_temp = self.generar(nodo.condicion)
+        self.emitir(f"GOTO_IF_FALSE {cond_temp}, {etiqueta_fin}")
+
+        for sentencia_cuerpo in nodo.cuerpo:
+            self.generar(sentencia_cuerpo)
+
+        self.generar(nodo.actualizacion)
+        self.emitir(f"GOTO {etiqueta_inicio}")
+        self.emitir(f"# ETIQUETA {etiqueta_fin}:")
+
 
     def generar_ExpresionBinaria(self, nodo):
         izq = self.generar(nodo.izquierda)
@@ -245,6 +258,7 @@ class GeneradorIntermedio:
             resultado_factor = self.generar(factor_nodo)
             resultados_factores_ir.append(resultado_factor)
         return resultados_factores_ir #la mando asi nada mas pq jajaja traducimos la lista a una de python y ya ajajaj
+    #XD
 
     def obtener_nombre_tipo(self, token_type):
         tipos = {
