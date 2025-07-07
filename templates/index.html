@@ -12,6 +12,8 @@
   <script src="/static/js/realTime.js" defer></script>
   <script src="/static/js/darkMode.js" defer></script>
   <script src="/static/js/lineNumbers.js" defer></script>
+  <script src="/static/js/lineasTab.js" defer></script>
+
 
 </head>
 <body>
@@ -66,8 +68,38 @@
       <div class="block-decoration bottom-right"></div>
       
       <div class="panel-title">🔍 Consola</div>
-      <textarea rows="20" readonly placeholder="Aquí aparecerán los tokens analizados...">{{ result }}</textarea>
+
+      <!--pestañas -->
+      <div class="console-tabs">
+        <button class="tab-btn active" data-target="tab-tokens">Tokens</button>
+        <button class="tab-btn"      data-target="tab-syntax">Sintaxis</button>
+        <button class="tab-btn"      data-target="tab-semantic">Semántica</button>
+        <button class="tab-btn"      data-target="tab-interm">Code inter</button>
+        <button class="tab-btn"      data-target="tab-opti">Opti</button>
+        <button class="tab-btn"      data-target="tab-output">Output</button>
+      </div>
+
+      <!--Los contenedores de cada pestaña -->
+      <div id="tab-tokens" class="tab-content active">
+        <textarea readonly>{{ tokens_console }}</textarea>
+      </div>
+      <div id="tab-syntax" class="tab-content">
+        <textarea readonly>{{ syntax_console }}</textarea>
+      </div>
+      <div id="tab-semantic" class="tab-content">
+        <textarea readonly>{{ semantic_console }}</textarea>
+      </div>
+      <div id="tab-interm" class="tab-content">
+        <textarea readonly>{{ intermediate_console }}</textarea>
+      </div>
+      <div id="tab-opti" class="tab-content">
+        <textarea readonly>{{ opti_console }}</textarea>
+      </div>
+      <div id="tab-output" class="tab-content">
+        <textarea readonly>{{ output_console }}</textarea>
+      </div>
     </div>
+
   </div>
 
 <script>
@@ -94,7 +126,7 @@
   const initialCode = {{ code | tojson }};
   quill.setText(initialCode);
 
-  // NUEVA FUNCIONALIDAD: Sincronizar scroll entre editor y números de línea
+  //Sincronizar scroll entre editor y números de línea
   const editor = document.querySelector('#editor .ql-editor');
   const lineNumbers = document.querySelector('.line-numbers');
   

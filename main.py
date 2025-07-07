@@ -1,97 +1,97 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from Compiler.main import *
-from fastapi.responses import JSONResponse
-import re
+from Compiler.main import init_automata, lexical, syntax, semantic, intermediate
 
 app = FastAPI()
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Inicializamos nuestro autómata
 automata = init_automata()
 
 def clean_code(code: str) -> str:
     """
-    - Elimina todos los '\r'
-    - Sustituye NBSP (U+00A0) por espacio normal
-    - Quita saltos de línea al inicio y final, pero respeta los intermedios
+    - Quita '\r'
+    - Reemplaza NBSP por espacio normal
+    - Elimina saltos de línea al inicio y al final
     """
-    # 1) Quitar retornos de carro
     code = code.replace("\r", "")
-    # 2) Sustituir NBSP por espacio (si quieres borrarlo por completo, usa "")
     code = code.replace("\xa0", " ")
-    # 3) Eliminar saltos de línea sobrantes al principio y al final
-    code = code.strip("\n")
-    return code
+    return code.strip("\n")
 
-#Aquí no te metas porque sólo carga el html inicial
 @app.get("/", response_class=HTMLResponse)
 def form(request: Request):
+    # Al cargar la página por primera vez, todas las pestañas van vacías
     return templates.TemplateResponse("index.html", {
         "request": request,
+        "code": "",
+        "tokens_console": "",
+        "syntax_console": "",
+        "semantic_console": "",
+        "intermediate_console": "",
+        "opti_console": "",
+        "output_console": "",
         "tokens_json": [],
         "errors_json": [],
-        "errors_s_json": [],
-        "code": ""  # el primer cuadro vacío para cargar ambos en la vista
+        "errors_s_json": []
     })
 
-#Aquí es donde ya vas a hacer todo el movimiento como mandar llamar la función que ocupes para procesar el code
-############
-#NOTA: El parametro code se pasa como un str normal
 @app.post("/lex", response_class=HTMLResponse)
 async def analyze(request: Request, code: str = Form(...)):
-    #ejemplo de función y así, pasas el code que es str
-    code = code.replace("\r", "")
-    code = code.replace("\xa0", "")
-    tokens, errors = lexical(automata, code)
+    code = clean_code(code)
 
-    part1 = "\n".join([str(token.type) for token in tokens])
-    part2 = "\n".join([f"{error.type} error: {error.value} at row {error.row} column {error.column}\n" for error in errors])
-    result_string = f"{part1}\n\n{part2}"
+    #fase lex
+    tokens, lex_errors = lexical(automata, code)
+    # Para la pestaña "Tokens"
+    tokens_console = "\n".join(str(t.type) for t in tokens)
 
-    # Prepara tokens mínimos para el cliente
+    #fase sintactica
+    string_ast, syntax_errors, ast = syntax(tokens)
+    if syntax_errors:
+        syntax_console = "\n".join(err.value for err in syntax_errors)
+    else:
+        syntax_console = string_ast
+
+    #fase semantica
+    semantic_console = ""
+    sem_errors = []
+    if not syntax_errors:
+        sem_output, sem_errors = semantic(ast)
+        if sem_errors:
+            semantic_console = "\n".join(sem_errors)
+        else:
+            semantic_console = sem_output
+
+    #code intermedio
+    intermediate_console = ""
+    if not syntax_errors and not sem_errors:
+        interm = intermediate(ast)
+        intermediate_console = "\n".join(interm)
+
+    #Colorear en tiempo real
     simple_tokens = [
-      {"index": t.index, "length": t.length, "type": (t.type // 1000)*1000}
-      for t in tokens
+        {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
+        for t in tokens
+    ]
+    simple_errors = [
+        {"index": e.index, "length": e.length}
+        for e in lex_errors
+    ]
+    syn_errors_l = [
+        {"index": tokens[err.index].index, "length": tokens[err.index].length}
+        for err in syntax_errors
     ]
 
-    # for t in tokens:
-    #     # Serie: 1000, 2000, 3000…
-    #     serie = (t.type // 1000) * 1000
-    #     # El substring real desde el código
-    #     snippet = code[t.index : t.index + t.length]
-    #     print(f"Token en índice {t.index} (longitud {t.length}): "
-    #         f"'{snippet}' → serie {serie}")
-
-    simple_errors = [{"index": err.index, "length": err.length} for err in errors]
-
-
-    string_result, syntax_errors, ast = syntax(tokens)
-    syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
-
-    string_errors = ""
-    for error in syntax_errors:
-        string_errors += error.value + "\n"
-
-    sem_errors = 0
-    if len(syntax_errors) == 0:
-        string_result, sem_errors = semantic(ast)
-        if len(sem_errors) > 0:
-            for error in sem_errors:
-                string_errors += error + "\n"
-
-    if len(sem_errors) == 0:
-        string_result = ""
-        for instruction in intermediate(ast):
-            string_result += instruction + "\n"
-
-
+    #Renderizar la plantilla con las cuatro pestañas
     return templates.TemplateResponse("index.html", {
         "request": request,
         "code": code,
-        "result": string_errors if len(string_errors) > 1 else string_result,
+        "tokens_console": tokens_console,
+        "syntax_console": syntax_console,
+        "semantic_console": semantic_console,
+        "intermediate_console": intermediate_console,
         "tokens_json": simple_tokens,
         "errors_json": simple_errors,
         "errors_s_json": syn_errors_l
@@ -99,9 +99,8 @@ async def analyze(request: Request, code: str = Form(...)):
 
 @app.post("/lex/json")
 async def lex_json(code: str = Form(...)):
-    code = code.replace("\r", "")
-    #print(repr(code))
-    tokens, errors = lexical(automata, code)
+    code = clean_code(code)
+    tokens, lex_errors = lexical(automata, code)
 
     simple_tokens = [
         {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
@@ -109,11 +108,14 @@ async def lex_json(code: str = Form(...)):
     ]
     simple_errors = [
         {"index": e.index, "length": e.length}
-        for e in errors
+        for e in lex_errors
     ]
 
-    string_ast, syntax_errors, _ = syntax(tokens)
-    syn_errors_l = [{"index": tokens[err.index].index, "length": tokens[err.index].length} for err in syntax_errors]
+    _, syntax_errors, _ = syntax(tokens)
+    syn_errors_l = [
+        {"index": tokens[err.index].index, "length": tokens[err.index].length}
+        for err in syntax_errors
+    ]
 
     return JSONResponse({
         "tokens": simple_tokens,

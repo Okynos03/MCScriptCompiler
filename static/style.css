@@ -589,6 +589,7 @@ body.dark-mode .toggle-container button:hover {
   height: calc(100% - 80px);
   flex: 1;
 }
+
 /* gutter de números */
 .editor-container .line-numbers {
   counter-reset: line;
@@ -613,6 +614,7 @@ body.dark-mode .toggle-container button:hover {
   justify-content: flex-end;
   padding-right: 8px;
 }
+
 .editor-container .ql-container {
   flex: 1;
   height: 100%;
@@ -633,6 +635,118 @@ body.dark-mode .editor-container .line-numbers {
   background: #3d3d3d;
   border-right: 1px solid #555;
   color: #bbb;
+}
+
+/* PESTAÑAS DE CONSOLA*/
+.console-tabs {
+  display: flex;
+  border-bottom: 2px solid #654321;
+  margin-bottom: 0; /* Removemos el margen inferior */
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+body.dark-mode .console-tabs {
+  border-bottom-color: #444;
+  background: rgba(0,0,0,0.4);
+}
+
+.console-tabs .tab-btn {
+  background: linear-gradient(45deg, #8B4513, #A0522D);
+  border: none;
+  border-right: 2px solid #654321;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 0 #000;
+  transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+}
+
+body.dark-mode .console-tabs .tab-btn {
+  background: linear-gradient(45deg, #2c1810, #3d2317);
+  border-right-color: #444;
+  color: #B0C4DE;
+}
+
+.console-tabs .tab-btn:last-child {
+  border-right: none;
+}
+
+.console-tabs .tab-btn:hover {
+  background: linear-gradient(45deg, #A0522D, #CD853F);
+  transform: translateY(-2px);
+}
+
+body.dark-mode .console-tabs .tab-btn:hover {
+  background: linear-gradient(45deg, #3d2317, #4a2b1c);
+  transform: translateY(-2px);
+}
+
+.console-tabs .tab-btn.active {
+  background: linear-gradient(45deg, #FFD700, #FFF8DC);
+  color: #000;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+body.dark-mode .console-tabs .tab-btn.active {
+  background: linear-gradient(45deg, #6495ED, #87CEEB);
+  color: #000;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+
+/* CONTENIDO DE LAS PESTAÑAS*/
+.tab-content {
+  display: none;
+  height: calc(100% - 50px);
+  flex: 1;
+}
+
+.tab-content.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  font-family: 'Courier New', monospace;
+  background: #F5F5DC;
+  border: 4px solid #8B4513;
+  border-top: none; /* Removemos el borde superior para continuidad visual */
+  padding: 15px;
+  margin: 0;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.3),
+    inset -2px -2px 4px rgba(255,255,255,0.3);
+  color: #2F4F4F;
+  line-height: 1.4;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .tab-content textarea {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e6e6e6;
+  box-shadow: 
+    inset 2px 2px 4px rgba(0,0,0,0.5),
+    inset -2px -2px 4px rgba(255,255,255,0.1);
+}
+
+/* AJUSTE DEL CONTENEDOR DE LA CONSOLA */
+.right {
+  display: flex;
+  flex-direction: column;
+}
+
+.right .panel-title {
+  margin-bottom: 10px;
 }
 
 /* Responsive */
@@ -666,5 +780,10 @@ body.dark-mode .editor-container .line-numbers {
   .toggle-container {
     flex-direction: column;
     align-items: flex-end;
+  }
+  
+  .console-tabs .tab-btn {
+    font-size: 6px;
+    padding: 6px 12px;
   }
 }
