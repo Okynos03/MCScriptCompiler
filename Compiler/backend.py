@@ -6,6 +6,7 @@ from static.series import INT, FLOAT, COFRE
 
 class PythonCode:
     def __init__(self, codigo_intermedio, execution_session=None):
+        self.param_stack = None
         self.codigo_intermedio = codigo_intermedio
         self.execution_session = execution_session
         #aquí se va acumulando el script Python completo
@@ -176,27 +177,43 @@ def weak_arithmetic(x):
             temp, message = args.split(', ')
             translated_line = f"{temp} = await async_input({message})"
         elif opcode.startswith("ETIQUETA"):
-            pass
+            return f"{args}:"
         elif opcode == "GOTO":
-            pass
+            return "continue"
         elif opcode == "GOTO_IF_FALSE":
-            pass
+            cond, label = [s.strip() for s in args.split(",")]
+            return f"if {_translate_operand(cond)}:"
         elif opcode == "CALL":
-            pass
+            if '=' in args:
+                dest, func_name = [s.strip() for s in args.split("=")]
+                params = ", ".join(self.param_stack)
+                self.param_stack.clear()
+                return f"{dest} = {func_name}({params})"
+            else:
+                func_name = args.strip()
+                params = ", ".join(self.param_stack)
+                self.param_stack.clear()
+                return f"{func_name}({params})"
         elif opcode == "PUSH_PARAM":
-            pass
+            self.param_stack.append(_translate_operand(args))
+            return None
         elif opcode == "POP_RETVAL":
-            pass
+            return None, is_special_flow
+            #call ya asigna el valor de retorno pero checalo jesus
         elif opcode == "RETURN":
-            pass
+            return f"return {_translate_operand(args)}" if args else "return", is_special_flow
         elif opcode == "PARAM_DECL":
-            pass
+            return None, is_special_flow
         elif opcode == "FIN_FUNC":
-            pass
+            return None, is_special_flow
         elif opcode == "GET_LIST_ITEM":
-            pass
+            dest, ops = [s.strip() for s in args.split("=")]
+            list_var, index_var = [s.strip() for s in ops.split(",")]
+            translated_line = f"{dest} = safe_get({_translate_operand(list_var)}, {_translate_operand(index_var)})"
         elif opcode == "SET_LIST_ITEM":
-            pass
+            ops, value = [s.strip() for s in args.split("=")]
+            list_var, index_var = [s.strip() for s in ops.split(",")]
+            translated_line = f"safe_set({_translate_operand(list_var)}, {_translate_operand(index_var)}, {_translate_operand(value)})"
 
         return translated_line, is_special_flow
 
