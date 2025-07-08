@@ -54,9 +54,11 @@ class Parser:
                 self.match(RBRACE)
                 self.match(MORIR)
                 self.match(SEMICOLON)
-                return Programa(sentencias)
+                ret = Programa(sentencias)
+                ret.index = self.pos - 1
+                return ret
             else:
-                self.error("Se esperaba SPAWNEAR al inicio del programa")
+                self.errors.append(Error("Syntax", f"Se esperaba spawnear al inicio", -1, -1, self.pos, -1))
                 return Programa([])
         except Exception as e:
             #print(f"[Fatal] {e}")
@@ -85,7 +87,9 @@ class Parser:
                 self.pos = pos_inicial
                 expr = self.expresion()
                 self.match(SEMICOLON)
-                return SentenciaExpresion(expr)
+                ret = SentenciaExpresion(expr)
+                ret.index = self.pos - 1
+                return ret
         elif tipo == SI:
             return self.sentencia_si()
         elif tipo == MIENTRAS:
@@ -96,11 +100,15 @@ class Parser:
             return self.sentencia_tp()
         elif tipo == SEMICOLON:
             self.match(SEMICOLON)
-            return SentenciaVacia()
+            ret = SentenciaVacia()
+            ret.index = self.pos - 1
+            return ret
         else:
             expr = self.expresion()
             self.match(SEMICOLON)
-            return SentenciaExpresion(expr)
+            ret =  SentenciaExpresion(expr)
+            ret.index = self.pos - 1
+            return ret
 
     def declaracion_funcion(self):
         self.match(PORTAL)
@@ -112,7 +120,9 @@ class Parser:
         self.match(LBRACE)
         cuerpo = self.lista_sentencias()
         self.match(RBRACE)
-        return DeclaracionFuncion(nombre, parametros, cuerpo)
+        ret =  DeclaracionFuncion(nombre, parametros, cuerpo)
+        ret.index = self.pos - 1
+        return ret
 
     def parametros(self):
         params = []
@@ -137,14 +147,20 @@ class Parser:
                 lista = self.lista_factores()
                 self.match(RSQB)
                 self.match(SEMICOLON)
-                return SentenciaDeclaracion(tipo, nombre, lista, es_lista=True)
+                ret =  SentenciaDeclaracion(tipo, nombre, lista, es_lista=True)
+                ret.index = self.pos - 1
+                return ret
             else:
                 valor = self.expresion()
                 self.match(SEMICOLON)
-                return SentenciaDeclaracion(tipo, nombre, valor, es_lista=False)
+                ret =  SentenciaDeclaracion(tipo, nombre, valor, es_lista=False)
+                ret.index = self.pos - 1
+                return ret
         else:
             self.match(SEMICOLON)
-            return SentenciaDeclaracion(tipo, nombre, valor=None, es_lista=False)
+            ret = SentenciaDeclaracion(tipo, nombre, valor=None, es_lista=False)
+            ret.index = self.pos - 1
+            return ret
 
     def sentencia_asignacion(self):
         nombre = self.current().value
@@ -158,7 +174,9 @@ class Parser:
                 self.match(ASSIGN)
                 valor = self.expresion()
                 self.match(SEMICOLON)
-                return SentenciaAsignacion(nombre, valor, indice=indice, es_acceso=True)
+                ret = SentenciaAsignacion(nombre, valor, indice=indice, es_acceso=True)
+                ret.index = self.pos - 1
+                return ret
             raise Exception
         self.match(ASSIGN)
         if self.current().type == LSQB:  # [
@@ -166,11 +184,15 @@ class Parser:
             lista = self.lista_factores()
             self.match(RSQB)
             self.match(SEMICOLON)
-            return SentenciaAsignacion(nombre, lista, es_lista=True)
+            ret = SentenciaAsignacion(nombre, lista, es_lista=True)
+            ret.index = self.pos - 1
+            return ret
         else:
             valor = self.expresion()
             self.match(SEMICOLON)
-            return SentenciaAsignacion(nombre, valor, es_lista=False)
+            ret = SentenciaAsignacion(nombre, valor, es_lista=False)
+            ret.index = self.pos - 1
+            return ret
 
     def sentencia_tp(self):
         self.match(TELETRANSPORTAR)
@@ -179,7 +201,9 @@ class Parser:
         else:
             destino = None
         self.match(SEMICOLON)
-        return SentenciaTP(destino)
+        ret = SentenciaTP(destino)
+        ret.index = self.pos - 1
+        return ret
 
     def sentencia_si(self):
         self.match(SI)
@@ -200,9 +224,13 @@ class Parser:
             else:
                 self.error("Se esperaba '{' o 'si' después de 'sino'")
                 sino = []
-            return SentenciaSi(cond, entonces, sino)
+            ret = SentenciaSi(cond, entonces, sino)
+            ret.index = self.pos - 1
+            return ret
         else:
-            return SentenciaSi(cond, entonces)
+            ret = SentenciaSi(cond, entonces)
+            ret.index = self.pos - 1
+            return ret
 
     def sentencia_mientras(self):
         self.match(MIENTRAS)
@@ -212,7 +240,9 @@ class Parser:
         self.match(LBRACE)
         cuerpo = self.lista_sentencias()
         self.match(RBRACE)
-        return SentenciaMientras(cond, cuerpo)
+        ret = SentenciaMientras(cond, cuerpo)
+        ret.index = self.pos - 1
+        return ret
 
     def sentencia_para(self):
         self.match(PARA)
@@ -225,7 +255,9 @@ class Parser:
         self.match(LBRACE)
         cuerpo = self.lista_sentencias()
         self.match(RBRACE)
-        return SentenciaPara(inicial, cond, actualizacion, cuerpo)
+        ret = SentenciaPara(inicial, cond, actualizacion, cuerpo)
+        ret.index = self.pos - 1
+        return ret
 
     def expresion(self):
         return self.expresion_logica()
@@ -237,6 +269,7 @@ class Parser:
             self.match(self.current().type)
             derecha = self.expresion_igualdad()
             izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
         return izquierda
 
     def expresion_igualdad(self):
@@ -246,6 +279,7 @@ class Parser:
             self.match(EQUAL)
             derecha = self.expresion_relacional()
             izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
         return izquierda
 
     def expresion_relacional(self):
@@ -255,6 +289,7 @@ class Parser:
             self.match(self.current().type)
             derecha = self.expresion_aritmetica()
             izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
         return izquierda
 
     def expresion_aritmetica(self):
@@ -264,15 +299,27 @@ class Parser:
             self.match(self.current().type)
             derecha = self.termino()
             izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
         return izquierda
 
     def termino(self):
-        izquierda = self.factor()
+        izquierda = self.exponente()
         while self.current().type in [MUL, DIV, MOD]:
+            op = self.current().value
+            self.match(self.current().type)
+            derecha = self.exponente()
+            izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
+        return izquierda
+
+    def exponente(self):
+        izquierda = self.factor()
+        while self.current().type == EXP:
             op = self.current().value
             self.match(self.current().type)
             derecha = self.factor()
             izquierda = ExpresionBinaria(izquierda, op, derecha)
+            izquierda.index = self.pos
         return izquierda
 
     def factor(self):
@@ -282,7 +329,9 @@ class Parser:
             op = valor
             self.match(tipo)
             expr = self.factor()
-            return ExpresionUnaria(op, expr)
+            ret = ExpresionUnaria(op, expr)
+            ret.index = self.pos - 1
+            return ret
         elif tipo == LPAREN:
             self.match(LPAREN)
             expr = self.expresion()
@@ -295,35 +344,49 @@ class Parser:
                 self.match(LPAREN)
                 args = self.argumentos()
                 self.match(RPAREN)
-                return ExpresionLlamadaFuncion(nombre, args)
+                ret = ExpresionLlamadaFuncion(nombre, args)
+                ret.index = self.pos - 1
+                return ret
             elif self.current().type == LSQB:
                 self.match(LSQB)
                 indice = self.expresion()
                 self.match(RSQB)
-                return ExpresionAccesoArreglo(nombre, indice)
+                ret =  ExpresionAccesoArreglo(nombre, indice)
+                ret.index = self.pos - 1
+                return ret
             else:
-                return ExpresionIdentificador(nombre)
+                ret = ExpresionIdentificador(nombre)
+                ret.index = self.pos - 1
+                return ret
         elif tipo in [INT, FLOAT]:
             self.match(tipo)
             if tipo == INT:
-                return ExpresionLiteral(int(valor)) # hice mod aqui a ver si jala
+                ret = ExpresionLiteral(int(valor)) # hice mod aqui a ver si jala
+                ret.index = self.pos - 1
+                return ret
             else:
-                return ExpresionLiteral(float(valor))
+                ret = ExpresionLiteral(float(valor))
+                ret.index = self.pos - 1
+                return ret
         elif tipo in [ENCENDIDO, APAGADO]:
             self.match(tipo)
-            return ExpresionBooleana(valor)
+            ret = ExpresionBooleana(valor)
+            ret.index = self.pos - 1
+            return ret
         elif tipo == QUOTE:
             return self.cadena_texto()
-        elif tipo in [ANTORCHAR, CRAFTEAR, ROMPER, APILAR, REPARTIR, SOBRAR, ENCANTAR, CHAT]:
+        elif tipo in [ANTORCHAR, CRAFTEAR, ROMPER, APILAR, REPARTIR, SOBRAR, ENCANTAR, CHAT, CARTEL]:
             return self.funcion_especial()
         elif tipo == LSQB:
             self.match(LSQB)
             factores = self.lista_factores()
             self.match(RSQB)
-            return ListaFactores(factores)
+            return factores
         else:
             self.error("Factor inválido")
-            return ExpresionLiteral(0)
+            ret = ExpresionLiteral(0)
+            ret.index = self.pos - 1
+            return ret
 
     def argumentos(self):
         args = []
@@ -341,11 +404,21 @@ class Parser:
         if tipo == CHAT:
             arg = self.expresion()
             self.match(RPAREN)
-            return FuncionChat(arg)
+            ret = FuncionChat(arg)
+            ret.index = self.pos - 1
+            return ret
+        elif tipo == CARTEL:
+            arg = self.expresion()
+            self.match(RPAREN)
+            ret = FuncionCartel(arg)
+            ret.index = self.pos - 1
+            return ret
         elif tipo == ANTORCHAR:
             arg = self.expresion()
             self.match(RPAREN)
-            return FuncionAntorchar(arg)
+            ret = FuncionAntorchar(arg)
+            ret.index = self.pos - 1
+            return ret
         else:
             izq = self.expresion()
             self.match(COMMA)
@@ -359,7 +432,9 @@ class Parser:
                 SOBRAR: FuncionSobrar,
                 ENCANTAR: FuncionEncantar
             }
-            return cls_map[tipo](izq, der)
+            ret = cls_map[tipo](izq, der)
+            ret.index = self.pos - 1
+            return ret
 
     def cadena_texto(self):
         texto = self.current().value
@@ -372,7 +447,9 @@ class Parser:
             else:
                 concatenaciones.append(self.expresion())
 
-        return ExpresionCadena(texto, concatenaciones)
+        ret = ExpresionCadena(texto, concatenaciones)
+        ret.index = self.pos - 1
+        return ret
 
     #esto se lo pedi a chat pq fue de ultimo jaja
     def lista_factores(self):
@@ -385,7 +462,9 @@ class Parser:
             factores.append(self.factor())
             factores.extend(self.resto_factores())
 
-        return ListaFactores(factores)
+        ret = ListaFactores(factores)
+        ret.index = self.pos - 1
+        return ret
 
     #si mantenemos lista de factores
     def resto_factores(self):
@@ -394,5 +473,3 @@ class Parser:
             self.match(COMMA)
             factores.append(self.factor())
         return factores
-
-

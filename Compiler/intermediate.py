@@ -43,14 +43,14 @@ class GeneradorIntermedio:
             indice = self.generar(nodo.indice)
             self.emitir(f"SET_LIST_ITEM {nodo.nombre}, {indice}, {valor_temp}")
         else:
-            self.emitir(f"{nodo.nombre} = {valor_temp}")
+            self.emitir(f"ASSIGN {nodo.nombre} = {valor_temp}")
 
     def generar_SentenciaDeclaracion(self, nodo):
         tipo = nodo.tipo if isinstance(nodo.tipo, str) else self.obtener_nombre_tipo(nodo.tipo)
         self.emitir(f"# Declaración de {tipo} {nodo.nombre}")
         if nodo.valor:
             valor_temp = self.generar(nodo.valor)
-            self.emitir(f"{nodo.nombre} = {valor_temp}")
+            self.emitir(f"ASSIGN {nodo.nombre} = {valor_temp}")
         else:
             pass
 
@@ -61,16 +61,17 @@ class GeneradorIntermedio:
         #self.entorno.entrar_ambito()
         self.offset_local_actual = 0
         etiqueta_funcion = f"FUNC_{nodo.nombre}"
-        self.emitir(f"# ETIQUETA {etiqueta_funcion}:")
+        self.emitir(f"ETIQUETA {etiqueta_funcion}:")
         self.etiquetas_funciones[nodo.nombre] = etiqueta_funcion
         for param in nodo.parametros:
-            self.emitir(f"# PARAM_DECL {param} OFFSET {self.offset_local_actual}") #innecesario pq pues python
+            # self.emitir(f"PARAM_DECL {param} OFFSET {self.offset_local_actual}") #innecesario pq pues python
+            self.emitir(f"PARAM_DECL {param}")
             self.offset_local_actual += 4 #solo si se usa ens supongo pero no se va a usar aca pq pues python :)
             #self.entorno.declarar(param, Simbolo(param, tipo='item', ambito='local'))
         for sentencia in nodo.cuerpo:
             self.generar(sentencia)
         # self.emitir(f"# ALLOC_LOCALS {self.offset_local_actual}") # si se usa pila dejar el espacio, epro no creo puro trad a python y ya
-        self.emitir(f"# FIN_FUNC {nodo.nombre}")
+        self.emitir(f"FIN_FUNC {nodo.nombre}")
         #self.entorno.salir_ambito()
 
     def generar_SentenciaTP(self, nodo):
@@ -95,16 +96,16 @@ class GeneradorIntermedio:
 
         if nodo.sino:
             self.emitir(f"GOTO {etiqueta_fin_si}")
-            self.emitir(f"# ETIQUETA {etiqueta_sino}:")
+            self.emitir(f"ETIQUETA {etiqueta_sino}:")
             for sentencia_sino in nodo.sino:
                 self.generar(sentencia_sino)
 
-        self.emitir(f"# ETIQUETA {etiqueta_fin_si}:")
+        self.emitir(f"ETIQUETA {etiqueta_fin_si}:")
 
     def generar_SentenciaMientras(self, nodo):
         etiqueta_inicio_bucle = self.nueva_etiqueta("WHILE_START")
         etiqueta_fin_bucle = self.nueva_etiqueta("WHILE_END")
-        self.emitir(f"# ETIQUETA {etiqueta_inicio_bucle}:")
+        self.emitir(f"ETIQUETA {etiqueta_inicio_bucle}:")
         resultado_condicion = self.generar(nodo.condicion)
         self.emitir(f"GOTO_IF_FALSE {resultado_condicion}, {etiqueta_fin_bucle}")
 
@@ -115,27 +116,42 @@ class GeneradorIntermedio:
         self.emitir(f"ETIQUETA {etiqueta_fin_bucle}:")
 
     #pendiente
-    def generar_SentenciaPara(self, nodo):
-        etiqueta_inicio = self.nueva_etiqueta("FOR_START")
-        etiqueta_fin    = self.nueva_etiqueta("FOR_END")
-        self.generar(nodo.inicial)
-        self.emitir(f"# ETIQUETA {etiqueta_inicio}:")
-        cond_temp = self.generar(nodo.condicion)
-        self.emitir(f"GOTO_IF_FALSE {cond_temp}, {etiqueta_fin}")
-
-        for sentencia_cuerpo in nodo.cuerpo:
-            self.generar(sentencia_cuerpo)
-
-        self.generar(nodo.actualizacion)
-        self.emitir(f"GOTO {etiqueta_inicio}")
-        self.emitir(f"# ETIQUETA {etiqueta_fin}:")
-
+    def generar_SentenciaPara(self):
+        pass
 
     def generar_ExpresionBinaria(self, nodo):
         izq = self.generar(nodo.izquierda)
         der = self.generar(nodo.derecha)
         temp = self.nuevo_temp()
-        self.emitir(f"{temp} = {izq} {nodo.operador if nodo.operador != "^" else "**"} {der}")
+        if nodo.operador == '+':
+            self.emitir(f"ADD {temp} = {izq}, {der}")
+        elif nodo.operador == '-':
+            self.emitir(f"SUB {temp} = {izq}, {der}")
+        elif nodo.operador == '^':
+            self.emitir(f"POW {temp} = {izq}, {der}")
+        elif nodo.operador == '*':
+            self.emitir(f"MUL {temp} = {izq}, {der}")
+        elif nodo.operador == '/':
+            self.emitir(f"DIV {temp} = {izq}, {der}")
+        elif nodo.operador == '%':
+            self.emitir(f"MOD {temp} = {izq}, {der}")
+        elif nodo.operador == '==':
+            self.emitir(f"EQ {temp} = {izq}, {der}")
+        elif nodo.operador == '>':
+            self.emitir(f"GT {temp} = {izq}, {der}")
+        elif nodo.operador == '>=':
+            self.emitir(f"GTE {temp} = {izq}, {der}")
+        elif nodo.operador == '<':
+            self.emitir(f"LT {temp} = {izq}, {der}")
+        elif nodo.operador == '<=':
+            self.emitir(f"LTE {temp} = {izq}, {der}")
+        elif nodo.operador == '.':
+            self.emitir(f"CON {temp} = {izq}, {der}")
+        elif nodo.operador == 'y':
+            self.emitir(f"AND {temp} = {izq}, {der}")
+        elif nodo.operador == 'o':
+            self.emitir(f"OR {temp} = {izq}, {der}")
+        #self.emitir(f"{temp} = {izq} {nodo.operador if nodo.operador != "^" else "**"} {der}")
         return temp
 
     def generar_ExpresionLiteral(self, nodo):
@@ -155,18 +171,17 @@ class GeneradorIntermedio:
             argumentos_generados.append(valor_arg)
             self.emitir(f"PUSH_PARAM {valor_arg}")
 
-        self.emitir(f"CALL {etiqueta_entrada_funcion}")
+        temp = self.nuevo_temp()
+        self.emitir(f"CALL {etiqueta_entrada_funcion}, {temp}")
 
         if nodo.recibe and nodo.recibe is not None:
-            temp_retorno = self.nuevo_temp()
-            self.emitir(f"{temp_retorno} = POP_RETVAL")
-            return temp_retorno
+            return temp
         else:
             return None
 
     def generar_ExpresionBooleana(self, nodo):
-        #return str( 1 if nodo.valor == "encendido" else 0)
-        return nodo.valor
+        return str( 1 if nodo.valor == "encendido" else 0)
+        #return nodo.valor
 
     def generar_ExpresionCadena(self, nodo):
         if nodo.concatenaciones:
@@ -181,7 +196,7 @@ class GeneradorIntermedio:
         temp_resultado = self.nuevo_temp()
 
         if nodo.operador == '-':
-            self.emitir(f"{temp_resultado} = NEG {operando_generado}")
+            self.emitir(f"NEG {temp_resultado} = {operando_generado}")
         elif nodo.operador == '+': #pq supongo que nucna hace nada
             pass
         else:
@@ -196,55 +211,57 @@ class GeneradorIntermedio:
 
         # GET_LIST_ITEM
         # Sintaxis: <temporal_resultado> = GET_LIST_ITEM <referencia_lista>, <indice>
-        self.emitir(f"{temp_resultado} = GET_LIST_ITEM {referencia_lista_ir}, {indice_generado}")
+        self.emitir(f"GET_LIST_ITEM {temp_resultado} = {referencia_lista_ir}, {indice_generado}") #MAYBE CAMBIAR LA FORMA PARA OPCODE AL PRINCIPIO>?
 
         return temp_resultado
 
     def generar_FuncionAntorchar(self, nodo):
         valor_generado = self.generar(nodo.valor)
-        self.emitir(f"NOT {valor_generado}")
-        return None
+        temp_resultado = self.nuevo_temp()
+
+        self.emitir(f"NOT {temp_resultado} = {valor_generado}")
+        return temp_resultado
 
     def generar_FuncionCraftear(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} + {der_generado}")
+        self.emitir(f"ADD {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionRomper(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} - {der_generado}")
+        self.emitir(f"SUB {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionApilar(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} * {der_generado}")
+        self.emitir(f"MUL {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionRepartir(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} / {der_generado}")
+        self.emitir(f"DIV {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionSobrar(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} % {der_generado}")
+        self.emitir(f"MOD {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionEncantar(self, nodo):
         izq_generado = self.generar(nodo.izq)
         der_generado = self.generar(nodo.der)
         temp_resultado = self.nuevo_temp()
-        self.emitir(f"{temp_resultado} = {izq_generado} ** {der_generado}")
+        self.emitir(f"POW {temp_resultado} = {izq_generado}, {der_generado}")
         return temp_resultado
 
     def generar_FuncionChat(self, nodo):
@@ -252,13 +269,19 @@ class GeneradorIntermedio:
         self.emitir(f"PRINT {mensaje_generado}")
         return None
 
+    def generar_FuncionCartel(self, nodo):
+        mensaje_generado = self.generar(nodo.mensaje)
+        temp_resultado = self.nuevo_temp()
+        #self.emitir(f"PRINT {mensaje_generado}")
+        self.emitir(f"INPUT {temp_resultado}, {mensaje_generado}")
+        return temp_resultado
+
     def generar_ListaFactores(self, nodo):
         resultados_factores_ir = []
         for factor_nodo in nodo.factores:
             resultado_factor = self.generar(factor_nodo)
             resultados_factores_ir.append(resultado_factor)
         return resultados_factores_ir #la mando asi nada mas pq jajaja traducimos la lista a una de python y ya ajajaj
-    #XD
 
     def obtener_nombre_tipo(self, token_type):
         tipos = {

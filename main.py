@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from Compiler.main import init_automata, lexical, syntax, semantic, intermediate
+from Compiler.main import init_automata, lexical, syntax, semantic, intermediate, optimize, trasnlation
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -57,18 +57,25 @@ async def analyze(request: Request, code: str = Form(...)):
     #fase semantica
     semantic_console = ""
     sem_errors = []
-    if not syntax_errors:
-        sem_output, sem_errors = semantic(ast)
+    if not syntax_errors and not lex_errors:
+        sem_output, sem_errors = semantic(ast, tokens)
         if sem_errors:
-            semantic_console = "\n".join(sem_errors)
+            semantic_console = "\n".join([error.value for error in sem_errors])
         else:
             semantic_console = sem_output
 
     #code intermedio
     intermediate_console = ""
-    if not syntax_errors and not sem_errors:
+    if not lex_errors and not syntax_errors and not sem_errors:
         interm = intermediate(ast)
         intermediate_console = "\n".join(interm)
+    #opt
+        opt_code = optimize(interm)
+        #que se vea el optimizado
+    #obj
+        exe = trasnlation(opt_code)
+        exe.save_n_exec() #ya modifica tu apra que se descargue el archivo python y tu ves como haces que los mesnajes los muestre en consola
+
 
     #Colorear en tiempo real
     simple_tokens = [

@@ -15,8 +15,8 @@ class Automaton:
     def run(self, text):
         list = []
         errors = []
-        identifiers = []
-        strings = []
+        #identifiers = []
+        #strings = []
         i = 0
         column = 1
         row = 1
@@ -46,7 +46,7 @@ class Automaton:
 
                 if symbol == "\n":
                     symbol = "\\n"
-                if symbol == " ":
+                elif symbol == " ":
                     symbol = "\\s"
                 elif re.match(r'\s', symbol):
                     j += 1
@@ -93,18 +93,18 @@ class Automaton:
                 if current not in self.F:
                     continue
                 token = Token(current, word, row, column - len(word), start_index, i - start_index)
-                if 6000 == current:
-                    if word not in [identifier.value for identifier in identifiers]:
-                        identifiers.append(token)
-                        token.set_pool_id(6000 + len(identifiers))
-                elif current == 3004:
-                    if word not in [string.value for string in strings]:
-                        strings.append(token)
-                        token.set_pool_id(3000 + len(strings))
+                # if 6000 == current:
+                #     if word not in [identifier.value for identifier in identifiers]:
+                #         identifiers.append(token)
+                #         token.set_pool_id(6000 + len(identifiers))
+                # elif current == 3004:
+                #     if word not in [string.value for string in strings]:
+                #         strings.append(token)
+                #         token.set_pool_id(3000 + len(strings))
                 list.append(token)
 
         list.append(Token(1, 'EOF', -1, -1, -1, -1))
-        return list, identifiers, strings, errors
+        return list, errors
 
 
 

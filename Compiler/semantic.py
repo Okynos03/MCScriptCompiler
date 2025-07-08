@@ -1,5 +1,6 @@
 from static.series import *
 from Compiler.ast_nodes import *
+from Compiler.Errors import Error
 
 class Simbolo:
     def __init__(self, nombre, tipo, ambito, es_funcion=False, parametros=None, tipo_retorno=None, tipo_contenido=None):
@@ -15,8 +16,8 @@ class Simbolo:
 
 class Entorno:
     def __init__(self):
-        self.ambitos = [{}]  # lista de diccionarios para representar los ámbitos
-        self.historial = []  # aquí guardarás todos los símbolos para fases posteriores
+        self.ambitos = [{}]
+        self.historial = []
 
     def entrar_ambito(self):
         self.ambitos.append({})
@@ -38,7 +39,7 @@ class Entorno:
         return nombre in self.ambitos[-1]
 
     def imprimir_historial(self):
-        s = "=== Historial completo de símbolos ===\n"
+        s = "=== Historial completo de símbolos ==="
         for nivel, simbolo in self.historial:
             linea = f"Ámbito {nivel} | {simbolo.nombre}: tipo={simbolo.tipo}"
             if simbolo.es_funcion:
@@ -48,10 +49,11 @@ class Entorno:
 
 
 class AnalizadorSemantico:
-    def __init__(self):
+    def __init__(self, tokens):
         self.entorno = Entorno()
         self.funcion_actual = None
         self.errores = []
+        self.tokens = tokens
 
     def analizar(self, nodo):
         metodo = f"visitar_{type(nodo).__name__}"
@@ -63,8 +65,11 @@ class AnalizadorSemantico:
         visitador = getattr(self, metodo, self.visitar_desconocido)
         return visitador(nodo)
 
+    def visitar_SentenciaVacia(self, nodo):
+        pass
+
     def visitar_desconocido(self, nodo):
-        self.errores.append(f"[Error] Nodo no reconocido: {type(nodo).__name__}")
+        self.errores.append(Error("SEMANTICAL", f"[Error] Nodo no reconocido: {type(nodo).__name__}", self.tokens[nodo.index].row, -1, -1, -1))
 
     def visitar_Programa(self, nodo):
         self.entorno.entrar_ambito()
@@ -72,35 +77,25 @@ class AnalizadorSemantico:
             self.analizar(sentencia)
         self.entorno.salir_ambito()
 
-    # def visitar_DeclaracionFuncion(self, nodo):
-    #     if self.entorno.existe_en_actual(nodo.nombre):
-    #         self.errores.append(f"[Error] Función '{nodo.nombre}' ya declarada en este ámbito")
-    #     tipo_retorno = self.inferir_tipo_retorno(nodo.cuerpo)
-    #     simbolo = Simbolo(nodo.nombre, 'funcion', ambito='local', es_funcion=True, parametros=nodo.parametros, tipo_retorno=tipo_retorno)
-    #     self.entorno.declarar(nodo.nombre, simbolo)
-    #     self.entorno.entrar_ambito()
-    #     for param in nodo.parametros:
-    #         if self.entorno.existe_en_actual(param):
-    #             self.errores.append(f"[Error] Parámetro '{param}' ya declarado en esta función")
-    #         self.entorno.declarar(param, Simbolo(param, 'item', ambito='local'))
-    #     self.funcion_actual = nodo.nombre
-    #     # contiene_tp = False
-    #     # for sentencia in nodo.cuerpo:
-    #     #     self.analizar(sentencia)
-    #     #     if isinstance(sentencia, SentenciaTP):
-    #     #         contiene_tp = True
-    #     # if not contiene_tp:
-    #     #     self.errores.append(f"[Error] La función '{nodo.nombre}' no contiene una sentencia TELETRANSPORTAR")
-    #     self.funcion_actual = None
-    #     self.entorno.salir_ambito()
-
     def visitar_DeclaracionFuncion(self, nodo):
+        if nodo.nombre == 'weak_arithmetic':
+            err_val = f"[Error] No se puede llamar '{nodo.nombre}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
+
         if self.entorno.existe_en_actual(nodo.nombre):
-            self.errores.append(f"[Error] Función '{nodo.nombre}' ya declarada en este ámbito")
+            err_val = f"[Error] Función '{nodo.nombre}' ya declarada en este ámbito"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         self.entorno.entrar_ambito()
         for param in nodo.parametros:
             if self.entorno.existe_en_actual(param):
-                self.errores.append(f"[Error] Parámetro '{param}' ya declarado en esta función")
+                err_val = f"[Error] Parámetro '{param}' ya declarado en esta función"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
             self.entorno.declarar(param, Simbolo(param, 'item', ambito='local'))
         self.funcion_actual = nodo.nombre
         tipos_retorno = []
@@ -109,12 +104,18 @@ class AnalizadorSemantico:
             if isinstance(sentencia, SentenciaTP) and sentencia.destino:
                 tipo_retorno = self.analizar(sentencia.destino)
                 tipos_retorno.append(tipo_retorno)
-        tipo_final = 'item'
+        """
+        Cambio
+        """
+        tipo_final = None
         if tipos_retorno:
             tipo_final = tipos_retorno[0]
             for tipo in tipos_retorno:
                 if not self.comparar_tipos(tipo_final, tipo):
-                    self.errores.append( f"[Error] Inconsistencia en tipo de retorno en función '{nodo.nombre}': '{tipo_final}' ≠ '{tipo}'")
+                    err_val = f"[Error] Inconsistencia en tipo de retorno en función '{nodo.nombre}': '{tipo_final}' ≠ '{tipo}'"
+                    self.errores.append(
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
         self.entorno.salir_ambito()
         self.funcion_actual = None
         simbolo = Simbolo(nodo.nombre, 'funcion', ambito='local', es_funcion=True, parametros=nodo.parametros,tipo_retorno=tipo_final)
@@ -124,10 +125,13 @@ class AnalizadorSemantico:
         self.analizar(nodo.expresion)
 
     def inferir_tipo_retorno(self, cuerpo):
+        """
+        Cambio
+        """
         for s in cuerpo:
             if isinstance(s, SentenciaTP) and s.destino:
                 return self.analizar(s.destino)
-        return 'item' #esto no estoy seguro, tal vez no esta bien
+        return None #esto no estoy seguro, tal vez no esta bien
 
     #ESTO HAY QUE CHECARLO MUCHOOO
     def verificar_retorno_consistente(self, cuerpo):
@@ -146,47 +150,73 @@ class AnalizadorSemantico:
 
     def visitar_SentenciaDeclaracion(self, nodo):
         if self.entorno.existe_en_actual(nodo.nombre):
-            self.errores.append(f"[Error] Variable '{nodo.nombre}' ya declarada en este ámbito")
+            err_val = f"[Error] Variable '{nodo.nombre}' ya declarada en este ámbito"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         tipo = self.obtener_tipo_nombre(nodo.tipo)
         self.entorno.declarar(nodo.nombre, Simbolo(nodo.nombre, tipo, ambito='local'))
         if hasattr(nodo, 'valor') and nodo.valor:
             if isinstance(nodo.valor, ListaFactores):
-                if tipo != 'cofre':
-                    self.errores.append(f"[Error] Solo variables tipo cofre pueden inicializarse con una lista")
+                if tipo not in ['cofre', 'item']:
+                    err_val = f"[Error] Solo variables tipo cofre pueden inicializarse con una lista"
+                    self.errores.append(
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
                 self.analizar(nodo.valor)
             else:
                 tipo_valor = self.analizar(nodo.valor)
                 if not self.comparar_tipos(tipo, tipo_valor):
+                    err_val = f"[Error] Tipo incompatible en asignación a '{nodo.nombre}': {tipo} = {tipo_valor}"
                     self.errores.append(
-                        f"[Error] Tipo incompatible en asignación a '{nodo.nombre}': {tipo} = {tipo_valor}")
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
 
     def visitar_SentenciaAsignacion(self, nodo):
         simbolo = self.entorno.buscar(nodo.nombre)
         if simbolo is None:
-            self.errores.append(f"[Error] Variable '{nodo.nombre}' no declarada")
+            err_val = f"[Error] Variable '{nodo.nombre}' no declarada"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         elif nodo.es_acceso:
-            if simbolo.tipo != 'cofre':
-                self.errores.append(f"[Error] Variable '{nodo.nombre}' no es un cofre, no puede indexarse")
+            if simbolo.tipo not in ['cofre', 'item']:
+                err_val = f"[Error] Variable '{nodo.nombre}' no es un cofre, no puede indexarse"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
             else:
                 tipo_indice = self.analizar(nodo.indice)
                 if tipo_indice != 'bloque':
+                    err_val = f"[Error] El índice para acceder a '{nodo.nombre}' debe ser de tipo bloque, se recibió '{tipo_indice}'"
                     self.errores.append(
-                        f"[Error] El índice para acceder a '{nodo.nombre}' debe ser de tipo bloque, se recibió '{tipo_indice}'")
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
             self.analizar(nodo.valor)
         elif isinstance(nodo.valor, ListaFactores): #nuevo
-            if simbolo.tipo != 'cofre':
-                self.errores.append(f"[Error] Se intentó asignar una lista a '{nodo.nombre}' que no es tipo cofre")
+            if simbolo.tipo not in ['cofre', 'item']:
+                err_val = f"[Error] Se intentó asignar una lista a '{nodo.nombre}' que no es tipo cofre"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
             else:
                 self.analizar(nodo.valor)
         else:
             tipo_valor = self.analizar(nodo.valor)
+            nodo.tipo_inferido = tipo_valor
             if not self.comparar_tipos(simbolo.tipo, tipo_valor):
-                self.errores.append(f"[Error] Tipo incompatible en asignación a '{nodo.nombre}': {simbolo.tipo} = {tipo_valor}")
+                err_val = f"[Error] Tipo incompatible en asignación a '{nodo.nombre}': {simbolo.tipo} = {tipo_valor}"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
 
     def visitar_SentenciaSi(self, nodo):
         tipo_cond = self.analizar(nodo.condicion)
         if tipo_cond != 'palanca':
-            self.errores.append(f"[Error] Condición del SI debe ser de tipo palanca, se encontró '{tipo_cond}'")
+            err_val = f"[Error] Condición del SI debe ser de tipo palanca, se encontró '{tipo_cond}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         self.entorno.entrar_ambito()
         for s in nodo.entonces:
             self.analizar(s)
@@ -200,7 +230,10 @@ class AnalizadorSemantico:
     def visitar_SentenciaMientras(self, nodo):
         tipo_cond = self.analizar(nodo.condicion)
         if tipo_cond != 'palanca':
-            self.errores.append(f"[Error] Condición del MIENTRAS debe ser de tipo palanca, se encontró '{tipo_cond}'")
+            err_val = f"[Error] Condición del MIENTRAS debe ser de tipo palanca, se encontró '{tipo_cond}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         self.entorno.entrar_ambito()
         for s in nodo.cuerpo:
             self.analizar(s)
@@ -211,12 +244,16 @@ class AnalizadorSemantico:
         self.analizar(nodo.inicial)
         tipo_cond = self.analizar(nodo.condicion)
         if tipo_cond != 'palanca':
-            self.errores.append(f"[Error] La condición en PARA debe ser de tipo palanca, se encontró '{tipo_cond}'")
+            err_val = f"[Error] La condición en PARA debe ser de tipo palanca, se encontró '{tipo_cond}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         self.analizar(nodo.actualizacion)
         for s in nodo.cuerpo:
             self.analizar(s)
         self.entorno.salir_ambito()
 
+    #tal vez en estos agregar los tipos a los nndos tmb
     def visitar_ExpresionLiteral(self, nodo):
         if isinstance(nodo.valor, int):
             return 'bloque'
@@ -226,6 +263,8 @@ class AnalizadorSemantico:
             if len(nodo.valor) == 1:
                 return 'hoja'
             return 'libro'
+        elif isinstance(nodo.valor, bool):
+            return 'palanca'
         return 'item'
 
     def visitar_ExpresionBooleana(self, nodo):
@@ -234,27 +273,46 @@ class AnalizadorSemantico:
     def visitar_ExpresionIdentificador(self, nodo):
         simbolo = self.entorno.buscar(nodo.nombre)
         if simbolo is None:
-            self.errores.append(f"[Error] Variable '{nodo.nombre}' no declarada")
+            err_val = f"[Error] Variable '{nodo.nombre}' no declarada"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
             return 'item'
         return simbolo.tipo
 
     def visitar_ExpresionAccesoArreglo(self, nodo):
         simbolo = self.entorno.buscar(nodo.nombre)
         if simbolo is None:
-            self.errores.append(f"[Error] Variable '{nodo.nombre}' no declarada")
+            err_val = f"[Error] Variable '{nodo.nombre}' no declarada"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
+            #nodo.recibe = None
             return 'item'
-        if simbolo.tipo != 'cofre':
-            self.errores.append(f"[Error] Variable '{nodo.nombre}' no es un cofre y se intenta indexar")
+        if simbolo.tipo not in ['cofre', 'item']:
+            err_val = f"[Error] Variable '{nodo.nombre}' no es un cofre y se intenta indexar"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         tipo_indice = self.analizar(nodo.indice)
         if tipo_indice != 'bloque':
-            self.errores.append(f"[Error] El índice en '{nodo.nombre}[exp]' debe ser de tipo bloque, se recibió '{tipo_indice}'")
+            err_val = f"[Error] El índice en '{nodo.nombre}[exp]' debe ser de tipo bloque, se recibió '{tipo_indice}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         if isinstance(nodo.indice, ExpresionLiteral):
             if isinstance(nodo.indice.valor, int):
                 if nodo.indice.valor < 0: #en realidad no sirve de nada jajajaja pq es una expresion unaria jajaja
-                    self.errores.append(f"[Error] El índice en '{nodo.nombre}[{nodo.indice.valor}]' no puede ser negativo")
+                    err_val = f"[Error] El índice en '{nodo.nombre}[{nodo.indice.valor}]' no puede ser negativo"
+                    self.errores.append(
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
             else:
-                self.errores.append(f"[Error] El índice debe ser entero, se recibió '{nodo.indice.valor}'")
-        if hasattr(simbolo, 'tipo_contenido') and simbolo.tipo_contenido:
+                err_val = f"[Error] El índice debe ser entero, se recibió '{nodo.indice.valor}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
+        if hasattr(simbolo, 'tipo_contenido') and simbolo.tipo_contenido: #esto no sirve de nada  por que noe s arreglo ya
             return simbolo.tipo_contenido
 
         return 'item'
@@ -267,87 +325,153 @@ class AnalizadorSemantico:
         except AttributeError:
             return self.verificar_funcion_nativa(nodo)
         if len(nodo.argumentos) != len(simbolo.parametros):
-            self.errores.append(f"[Error] Número de argumentos inválido para función '{nodo.funcion}'")
+            err_val = f"[Error] Número de argumentos inválido para función '{nodo.funcion}'"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         else:
             for arg, param in zip(nodo.argumentos, simbolo.parametros):
                 tipo_arg = self.analizar(arg)
-                tipo_param = self.entorno.buscar(param).tipo if self.entorno.buscar(param) else 'item'
-                if not self.comparar_tipos(tipo_param, tipo_arg): #puede que sea al reves
-                    self.errores.append(f"[Error] Tipo de argumento incompatible en llamada a '{nodo.funcion}': {tipo_arg} ≠ {tipo_param}")
-        return simbolo.tipo_retorno or 'item'
+                #tipo_param = self.entorno.buscar(param).tipo if self.entorno.buscar(param) else 'item'
+                tipo_param = 'item'
+                if not self.comparar_tipos(tipo_param, tipo_arg):  # puede que sea al reves
+                    err_val =  f"[Error] Tipo de argumento incompatible en llamada a '{nodo.funcion}': {tipo_arg} ≠ {tipo_param}"
+                    self.errores.append(
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
+        nodo.recibe = simbolo.tipo_retorno or 'item'
+        return simbolo.tipo_retorno or 'item' #igual item en lugar de none
 
     def verificar_funcion_nativa(self, nodo):
         nombre = type(nodo).__name__[7:].upper()
-        if nombre == 'CHAT':
-            return 'item' #no se que devolver aqui asi que el default
+        if nombre in ['CHAT', 'CARTEL']:
+            """
+            CAMBIO
+            """
+            args = [nodo.mensaje]
+            tipo = self.analizar(args[0])
+            if args and tipo not in ['libro', 'hoja', 'item', 'bloque', 'losa', 'palanca']:
+                err_val = "[Error] CHAT y CARTEL espera una expresión de tipo libro, bloque, losa, item, palanca u hoja"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
+            nodo.recibe = None if nombre == "CHAT" else 'item'
+            return None if nombre == "CHAT" else 'item' #no se que devolver aqui
         if nombre == 'ANTORCHAR':
             args = [nodo.valor]
             tipo = self.analizar(args[0])
             if args and tipo != 'palanca':
-                self.errores.append("[Error] ANTORCHAR espera una expresión de tipo palanca")
+                err_val = "[Error] ANTORCHAR espera una expresión de tipo palanca"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
+            nodo.recibe = 'palanca'
             return 'palanca'
         if nombre in ['CRAFTEAR', 'ROMPER', 'APILAR', 'REPARTIR', 'SOBRAR', 'ENCANTAR']:
             if not nodo.izq or not nodo.der:
-                self.errores.append(f"[Error] {nombre} espera exactamente 2 argumentos")
+                err_val = f"[Error] {nombre} espera exactamente 2 argumentos"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
             else:
                 args = [nodo.izq, nodo.der]
                 tipos = [self.analizar(args[0]), self.analizar(args[1])]
                 for i, tipo in enumerate(tipos):
                     if tipo not in ['bloque', 'losa', 'item']:
-                        self.errores.append(f"[Error] Argumento {i+1} de {nombre} debe ser tipo numérico")
+                        err_val = f"[Error] Argumento {i+1} de {nombre} debe ser tipo numérico"
+                        self.errores.append(
+                            Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                                  -1, -1, -1))
+                        nodo.recibe = 'item'
                         return 'item'
                 if nombre == 'SOBRAR' and 'losa' in tipos:
-                    self.errores.append("[Error] SOBRAR no permite valores tipo losa (debe ser entero)")
+                    err_val = "[Error] SOBRAR no permite valores tipo losa (debe ser entero)"
+                    self.errores.append(
+                        Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                              -1, -1, -1))
                 if nombre == 'REPARTIR':
                     if isinstance(args[1], ExpresionLiteral) and args[1].valor == 0:
-                        self.errores.append("[Error] Segundo argumento de REPARTIR no puede ser cero")
+                        err_val = "[Error] Segundo argumento de REPARTIR no puede ser cero"
+                        self.errores.append(
+                            Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                                  -1, -1, -1))
                 if 'item' in tipos:
+                    nodo.recibe = 'item'
                     return 'item'
                 elif 'losa' in tipos:
+                    nodo.recibe = 'losa'
                     return 'losa'
                 else:
+                    nodo.recibe = 'bloque'
                     return 'bloque'
-        self.errores.append(f"[Error] Función '{nodo.funcion}' no declarada")
+        err_val = f"[Error] Función '{nodo.funcion}' no declarada"
+        self.errores.append(
+            Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                  -1, -1, -1))
+        nodo.recibe = 'item'
         return 'item'
 
     def visitar_ExpresionBinaria(self, nodo):
         tipo_izq = self.analizar(nodo.izquierda)
         tipo_der = self.analizar(nodo.derecha)
-        if nodo.operador in ['+', '-', '*', '/', '%']:
+        if nodo.operador in ['+', '-', '*', '/', '%', '^']:
             if tipo_izq in ['bloque', 'losa', 'item'] and tipo_der in ['bloque', 'losa', 'item']:
-                if nodo.operador in ['/', '%'] or 'losa' in [tipo_izq, tipo_der]:
+                if nodo.operador == '%':
+                    if 'losa' in [tipo_izq, tipo_der]:
+                        err_val = f"[Error] Operación aritmética inválida entre '{tipo_izq}' y '{tipo_der}' para modulo"
+                        self.errores.append(
+                            Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                                  -1, -1, -1))
+                        return 'item'
+                    return 'bloque'
+                if nodo.operador == '/' or 'losa' in [tipo_izq, tipo_der]:
                     return 'losa'
                 if 'item' in [tipo_izq, tipo_der]:
                     return 'item'
                 return 'bloque'
             else:
-                self.errores.append(f"[Error] Operación aritmética inválida entre '{tipo_izq}' y '{tipo_der}'")
+                err_val = f"[Error] Operación aritmética inválida entre '{tipo_izq}' y '{tipo_der}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         elif nodo.operador in ['==']:
             if self.comparar_tipos(tipo_izq, tipo_der):
                 return 'palanca'
             else:
-                self.errores.append(f"[Error] Comparación de igualdad inválida entre '{tipo_izq}' y '{tipo_der}'")
+                err_val = f"[Error] Comparación de igualdad inválida entre '{tipo_izq}' y '{tipo_der}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         elif nodo.operador in ['<', '>', '<=', '>=']:
-            if tipo_izq in ['bloque', 'losa'] and tipo_der in ['bloque', 'losa']:
+            if tipo_izq in ['bloque', 'losa', 'item'] and tipo_der in ['bloque', 'losa', 'item']:
                 return 'palanca'
             else:
-                self.errores.append(f"[Error] Comparación relacional inválida entre '{tipo_izq}' y '{tipo_der}'")
+                err_val = f"[Error] Comparación relacional inválida entre '{tipo_izq}' y '{tipo_der}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         elif nodo.operador in ['y', 'o']:
-            if tipo_izq == 'palanca' and tipo_der == 'palanca':
+            if tipo_izq in ['palanca', 'item'] and tipo_der in ['palanca', 'item']:
                 return 'palanca'
             else:
-                self.errores.append(f"[Error] Operación lógica inválida entre '{tipo_izq}' y '{tipo_der}'")
+                err_val = f"[Error] Operación lógica inválida entre '{tipo_izq}' y '{tipo_der}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         elif nodo.operador == '.':
-            if tipo_izq in ['hoja', 'libro'] and tipo_der in ['hoja', 'libro']:
+            if tipo_izq in ['hoja', 'libro', 'item'] and tipo_der in ['hoja', 'libro', 'item']:
                 return 'libro'
             else:
-                self.errores.append(f"[Error] Operación lógica inválida entre '{tipo_izq}' y '{tipo_der}'")
+                err_val = f"[Error] Operación lógica inválida entre '{tipo_izq}' y '{tipo_der}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
-        return 'item'
+        return None
 
     #EL NODO EN REALIDAD SI ACEPTA EXPRESIONES, PERO ESTO POR EL MOMENTO SOLO CONSIDERA -1 Y +1 NO MAS
     def visitar_ExpresionUnaria(self, nodo):
@@ -356,13 +480,19 @@ class AnalizadorSemantico:
             if tipo_op in ['bloque', 'losa', 'item']:
                 return tipo_op
             else:
-                self.errores.append(f"[Error] Operador '-' no válido para tipo '{tipo_op}'")
+                err_val = f"[Error] Operador '-' no válido para tipo '{tipo_op}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         elif nodo.operador == '+':
             if tipo_op in ['bloque', 'losa', 'item']:
                 return tipo_op
             else:
-                self.errores.append(f"[Error] Operador '+' no válido para tipo '{tipo_op}'")
+                err_val = f"[Error] Operador '+' no válido para tipo '{tipo_op}'"
+                self.errores.append(
+                    Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                          -1, -1, -1))
                 return 'item'
         #POR SI LUEGO AGREGAMOS EL NO
         # elif nodo.operador == 'no':
@@ -372,7 +502,10 @@ class AnalizadorSemantico:
         #         self.errores.append(f"[Error] Operador 'no' solo se puede usar con palanca, se recibió '{tipo_op}'")
         #         return 'item'
         else:
-            self.errores.append(f"[Error] Operador unario desconocido: {nodo.operador}")
+            err_val = f"[Error] Operador unario desconocido: {nodo.operador}"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
             return 'item'
 
     def visitar_ExpresionCadena(self, nodo):
@@ -383,43 +516,34 @@ class AnalizadorSemantico:
 
     def visitar_SentenciaTP(self, nodo):
         if self.funcion_actual is None:
-            self.errores.append(f"[Error] TELETRANSPORTAR sólo se permite dentro de funciones")
+            err_val = f"[Error] TP sólo se permite dentro de funciones"
+            self.errores.append(
+                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
+                      -1, -1, -1))
         if nodo.destino:
             self.analizar(nodo.destino)
 
     def visitar_ListaFactores(self, nodo):
         if hasattr(nodo, 'elementos'): # No se si esta bien esta verificacion jaja
-            tipos = [self.analizar(factor) for factor in nodo.elementos]
-            if not tipos:
-                return 'cofre'
-        else:
-            return 'cofre'
-
-        #Reglas los tipos deben ser consistentes, o se generaliza a item
-        tipo_base = tipos[0]
-        for t in tipos[1:]:
-            if not self.comparar_tipos(tipo_base, t):
-                tipo_base = 'item'
-                break
+            for factor in nodo.elementos:
+                tipo = self.analizar(factor)
+                if tipo == 'funcion':
+                    return False
         return 'cofre'
 
 #tal vez agregar para strings?? al menos el ==
     def comparar_tipos(self, tipo_destino, tipo_origen):
+        if tipo_destino == 'funcion' or tipo_origen == 'funcion':
+            return False
         if tipo_destino == tipo_origen:
             return True
-        if tipo_destino == 'libro' and (tipo_origen == 'libro' or tipo_origen == 'hoja'):
-            return True
-        if tipo_destino == 'losa' and (tipo_origen == 'losa' or tipo_origen == 'bloque'):
-            return True
-        if tipo_destino == 'losa' and tipo_origen == 'item':
-            return False
-        if tipo_destino == 'bloque' and (tipo_origen == 'losa' or tipo_origen == 'item'):
-            return False
-        if tipo_destino == 'cofre' and tipo_origen == 'item':
-            return False
-        if tipo_destino == 'funcion' or tipo_origen == 'funcion': #habria que revisarlo
+        if tipo_origen is None:
             return False
         if tipo_destino == 'item' or tipo_origen == 'item':
+            return True
+        if tipo_destino == 'libro' and tipo_origen == 'hoja':
+            return True
+        if tipo_destino == 'losa' and tipo_origen == 'bloque':
             return True
         return False
 

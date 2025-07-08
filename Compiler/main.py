@@ -5,6 +5,8 @@ from Compiler.parser import Parser
 from Compiler.pretty_print import pretty_print
 from Compiler.semantic import AnalizadorSemantico
 from Compiler.intermediate import GeneradorIntermedio
+from Compiler.optimizer import OptimizadorCodigoIntermedio
+from Compiler.backend import PythonCode
 
 def init_automata():
     excel = Excel()
@@ -30,17 +32,19 @@ def lexical(automata, code):
     resultsfile.clear('./Results/Tokens.txt')
     resultsfile.clear('./Results/Lists.txt')
 
-    tokens, identifiers, strings, errors = automata.run(code)
+    tokens, errors = automata.run(code)
 
     if not tokens:
-        print("El archivo no arrojo resultado, favor de revisar")
+        #print("El archivo no arrojo resultado, favor de revisar")
+        pass
     else:
-        print("Done")
-        resultsfile.write(tokens)
-        resultsfile.write_symbol_data(identifiers, strings)
+        #print("Done")
+        #resultsfile.write(tokens)
+        #resultsfile.write_symbol_data(identifiers, strings)
         if errors:
-            resultsfile.write_errors(errors)
-            print("Hubo errores lexicos")
+            pass
+            #resultsfile.write_errors(errors)
+            #print("Hubo errores lexicos")
 
     return tokens, errors
 
@@ -51,8 +55,8 @@ def syntax(tokens):
 
     return string_ast, parser.errors, ast
 
-def semantic(ast):
-    sem = AnalizadorSemantico()
+def semantic(ast, tokens):
+    sem = AnalizadorSemantico(tokens)
     sem.visitar_Programa(ast)
 
     return sem.entorno.imprimir_historial(), sem.errores
@@ -62,3 +66,15 @@ def intermediate(ast):
     gen.generar(ast)
 
     return gen.instrucciones
+
+def optimize(int_code):
+    opt = OptimizadorCodigoIntermedio(int_code)
+    opt.optimizar()
+
+    return opt.codigo_intermedio
+
+def trasnlation(int_code):
+    exe = PythonCode(int_code)
+    exe.translate()
+
+    return exe
