@@ -30,6 +30,7 @@ def weak_arithmetic(x):
         return len(x)
 
 async def main():
+    await async_print("HOLA MUNDO")
     t1 = await async_input("ingresa:")
     resp = t1
     t2 = str("respuesta: ") + str(resp)

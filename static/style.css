@@ -1089,6 +1089,12 @@ body.dark-mode .execution-output::-webkit-scrollbar-thumb:hover {
   background: #4169E1;
 }
 
+.line-number.error {
+  background-color: rgba(255, 0, 0, 0.2);
+}
+.ql-editor .error-line {
+  background-color: rgba(255, 0, 0, 0.1);
+}
 /* Responsive */
 @media (max-width: 768px) {
   .container {

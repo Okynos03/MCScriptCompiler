@@ -18,49 +18,55 @@ const colorMap = {
 };
 
 async function updateHighlight() {
-  let text = quill.getText(0, quill.getLength() - 1);
-  // o bien, si quieres barrer todo CR/LF:
-  text = text.replace(/\r\n/g, "\n").replace(/^\n+|\n+$/g, ""); 
-  //const text = quill.getText();
+  let text = quill.getText(0, quill.getLength() - 1)
+                .replace(/\r\n/g, "\n")
+                .replace(/^\n+|\n+$/g, "");
   const form = new URLSearchParams();
-  
   form.append('code', text);
-  
 
   const resp = await fetch('/lex/json', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form.toString()
   });
-  const { tokens, errors: lexErrors, errors_s_json: syntaxErrors} = await resp.json();
+  const {
+    tokens,
+    lexErrors,
+    synErrors,
+    semErrorsRows   // <— aquí
+  } = await resp.json();
 
+  // 1) Limpio todo el formato previo
   quill.removeFormat(0, text.length);
 
-// ——— pinta cada token ———
-tokens.forEach(tok => {
-  const color = colorMap[tok.type];
-  if (color && tok.length > 0) {
-    quill.formatText(tok.index, tok.length, { color });
-  }
-});
-
-// ——— subraya errores léxicos ———
-lexErrors.forEach(err => {
-  quill.formatText(err.index, err.length, {
-    underline: true,
-    color: '#ff0000'
+  // 2) Pinto tokens (color, etc.)...
+  tokens.forEach(tok => {
+    const color = colorMap[tok.type];
+    if (color && tok.length > 0) {
+      quill.formatText(tok.index, tok.length, { color });
+    }
   });
-});
 
-// ——— subraya errores sintácticos ———
-syntaxErrors.forEach(err => {
-  quill.formatText(err.index, err.length, {
-    underline: true,
-    color: '#ff0000'
+  // 3) Subrayo errores léxicos y sintácticos
+  [...lexErrors, ...synErrors].forEach(err => {
+    quill.formatText(err.index, err.length, {
+      underline: true,
+      color: '#ff0000'
+    });
   });
-});
-    
 
+  // 4) Resalto líneas con errores semánticos
+  //    Para cada fila row: calculo índice de inicio y longitud de línea
+  const lines = text.split('\n');
+  semErrorsRows.forEach(row => {
+    const lineIdx = row - 1;
+    if (lineIdx >= 0 && lineIdx < lines.length) {
+      // índice absoluto donde arranca esa línea en el texto
+      const start = lines.slice(0, lineIdx).reduce((sum, l) => sum + l.length + 1, 0);
+      const length = lines[lineIdx].length;
+      quill.formatText(start, length, { background: 'rgba(255,0,0,0.1)' });
+    }
+  });
 }
 
 

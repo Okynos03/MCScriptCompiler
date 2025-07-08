@@ -78,6 +78,7 @@ def form(request: Request):
         "tokens_json": [],
         "errors_json": [],
         "errors_s_json": [],
+        "semantic_errors_rows": [],
         "session_id": None,
     })
 
@@ -85,11 +86,11 @@ def form(request: Request):
 async def analyze(request: Request, code: str = Form(...)):
     code = clean_code(code)
 
-    # 1) LEX
+    #LEX
     tokens, lex_errors = lexical(automata, code)
     tokens_console = "\n".join(str(t.type) for t in tokens)
 
-    # 2) SYNTAX
+    #SYNTAX
     string_ast, syntax_errors, ast = syntax(tokens)
     syntax_console = (
         "\n".join(err.value for err in syntax_errors)
@@ -97,9 +98,10 @@ async def analyze(request: Request, code: str = Form(...)):
         string_ast
     )
 
-    # 3) SEMANTIC
+    #SEMANTICO
     semantic_console = ""
     sem_errors = []
+    semantic_error_rows = []
     if not lex_errors and not syntax_errors:
         sem_out, sem_errors = semantic(ast, tokens)
         semantic_console = (
@@ -107,23 +109,24 @@ async def analyze(request: Request, code: str = Form(...)):
             if sem_errors else
             sem_out
         )
+        semantic_error_rows = [e.row for e in sem_errors]
 
-    # 4) INTERMEDIATE / OPTIMIZE / TRANSLATE
+    #INTERMEDIATE / OPTIMIZE / TRANSLATE
     intermediate_console = ""
     opti_console = ""
     output_console = ""
     
     if not lex_errors and not syntax_errors and not sem_errors:
-        # 4a) Código intermedio
+        #Código intermedio
         instrs = intermediate(ast)
         intermediate_console = "\n".join(instrs)
 
-        # 4b) Optimización
+        #Optimización
         optimizador = OptimizadorCodigoIntermedio(instrs)
         optimized = optimizador.optimizar()
         opti_console = "\n".join(optimized)
 
-        # 4c) Preparar para ejecución asíncrona
+        # Preparar para ejecución asíncrona
         # Crear session ID único para esta ejecución
         session_id = str(uuid.uuid4())
         execution_sessions[session_id] = {
@@ -133,7 +136,7 @@ async def analyze(request: Request, code: str = Form(...)):
         
         output_console = f"Código listo para ejecución. Session ID: {session_id}"
 
-    # 5) Preparar datos para resaltado en tiempo real
+    #Preparar datos para resaltado en tiempo real
     simple_tokens = [
         {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
         for t in tokens
@@ -150,6 +153,7 @@ async def analyze(request: Request, code: str = Form(...)):
         "tokens_console": tokens_console,
         "syntax_console": syntax_console,
         "semantic_console": semantic_console,
+        "semantic_errors_rows": semantic_error_rows,
         "intermediate_console": intermediate_console,
         "opti_console": opti_console,
         "output_console": output_console,
@@ -163,22 +167,28 @@ async def analyze(request: Request, code: str = Form(...)):
 async def lex_json(code: str = Form(...)):
     code = clean_code(code)
     tokens, lex_errors = lexical(automata, code)
+    _, syntax_errors, ast = syntax(tokens)
+
+    semantic_error_rows = []
+    if not lex_errors and not syntax_errors:
+        _, sem_errors = semantic(ast, tokens)
+        semantic_error_rows = [e.row for e in sem_errors]
+
     simple_tokens = [
         {"index": t.index, "length": t.length, "type": (t.type // 1000) * 1000}
         for t in tokens
     ]
-    simple_errors = [{"index": e.index, "length": e.length} for e in lex_errors]
-    _, syntax_errors, _ = syntax(tokens)
-    syn_errors_l = [
+    simple_lex = [{"index": e.index, "length": e.length} for e in lex_errors]
+    simple_syn = [
         {"index": tokens[e.index].index, "length": tokens[e.index].length}
         for e in syntax_errors
     ]
     return JSONResponse({
         "tokens": simple_tokens,
-        "errors": simple_errors,
-        "errors_s_json": syn_errors_l
+        "lexErrors": simple_lex,
+        "synErrors": simple_syn,
+        "semErrorsRows": semantic_error_rows
     })
-
 #######
 #Cada que se reqiera ejecutar código se va a tener que compilar antes
 ########
