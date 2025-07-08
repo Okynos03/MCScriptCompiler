@@ -219,6 +219,10 @@ async def execute_code_async(session: ExecutionSession, optimized_code):
     translator = PythonCode(optimized_code, session)
     translator.translate()
 
+    #actualiza el archivo antes de ejecutar porque se quedaba guardado xd
+    with open("codigo_objeto.py", "w", encoding="utf-8") as f:
+        f.write(translator.python_code)
+
     # Mensajes iniciales
     await session.send_output("Código generado: codigo_objeto.py")
     await session.send_output("Iniciando ejecución…")

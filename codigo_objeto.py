@@ -30,9 +30,10 @@ def weak_arithmetic(x):
         return len(x)
 
 async def main():
-    t0 = await async_input("ingresa hola:")
-    resp = t0
-    t1 = str("respuesta: ") + str(resp)
-    await async_print(t1)
+    t1 = await async_input("ingresa:")
+    resp = t1
+    t2 = str("respuesta: ") + str(resp)
+    await async_print(t2)
+    await async_print("adios")
 
 ### FIN MCScript ###
