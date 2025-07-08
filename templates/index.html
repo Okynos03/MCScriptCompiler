@@ -13,8 +13,6 @@
   <script src="/static/js/darkMode.js" defer></script>
   <script src="/static/js/lineNumbers.js" defer></script>
   <script src="/static/js/lineasTab.js" defer></script>
-
-
 </head>
 <body>
   <!-- Partículas de decoración -->
@@ -55,9 +53,11 @@
 
         <div class="button-container">
           <button type="submit">⚡ Compilar Bloques ⚡</button>
+          {% if session_id %}
+          <button type="button" id="executeBtn" onclick="startExecution()">🚀 Ejecutar 🚀</button>
+          {% endif %}
         </div>
       </form>
-
     </div>
 
     <!-- Zona derecha: pasa code con el mismo contenido por ahora que se va a cambiar ya con el analisis quij-->
@@ -77,6 +77,7 @@
         <button class="tab-btn"      data-target="tab-interm">Code inter</button>
         <button class="tab-btn"      data-target="tab-opti">Opti</button>
         <button class="tab-btn"      data-target="tab-output">Output</button>
+        <button class="tab-btn"      data-target="tab-execution">Ejecución</button>
       </div>
 
       <!--Los contenedores de cada pestaña -->
@@ -98,11 +99,39 @@
       <div id="tab-output" class="tab-content">
         <textarea readonly>{{ output_console }}</textarea>
       </div>
+      <div id="tab-execution" class="tab-content">
+        <div class="execution-console">
+          <div id="executionOutput" class="execution-output"></div>
+          <div id="inputSection" class="input-section">
+            <div id="inputPrompt" class="input-prompt"></div>
+            <div class="input-container">
+              <input type="text" id="userInput" placeholder="Escribe aquí tu respuesta..." disabled>
+              <button id="sendBtn" onclick="sendInput()" disabled>Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
+  <!-- Modal para input -->
+  <div id="inputModal" class="modal">
+    <div class="modal-content">
+      <h3>Entrada requerida</h3>
+      <p id="modalPrompt"></p>
+      <input type="text" id="modalInput" placeholder="Escribe tu respuesta...">
+      <div class="modal-buttons">
+        <button onclick="sendModalInput()">Enviar</button>
+        <button onclick="cancelInput()">Cancelar</button>
+      </div>
+    </div>
   </div>
 
 <script>
+  let websocket = null;
+  let sessionId = {{ session_id | tojson }};
+  let isWaitingInput = false;
+
   const quill = new Quill('#editor', {
     theme: 'snow',
     modules: {
@@ -122,7 +151,6 @@
     }
   });
 
-  const initial = `{{ code | replace("\n", "\\n") | replace("\t", "\\t") }}`;
   const initialCode = {{ code | tojson }};
   quill.setText(initialCode);
 
@@ -164,46 +192,184 @@
     document.getElementById('codeInput').value = quill.getText();
   });
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const tokens = {{ tokens_json | tojson }};
+  // Función para iniciar ejecución
+  function startExecution() {
+    if (!sessionId) {
+      alert('No hay sesión de ejecución disponible');
+      return;
+    }
 
-    const colorMap = {
-      1000: '#ab0ed6', // keyword
-      2000: '#e36209', // operator
-      3000: '#27c60b', // punctuation
-      4000: '#005cc5', // curly-brace
-      5000: '#079c29', // bracket
-      6000: '#6f42c1', // identifier
-      7000: '#005cc5', // integer
-      8000: '#005cc5', // float
+    //cambia a la pestaña de ejecución
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector('[data-target="tab-execution"]').classList.add('active');
+    document.getElementById('tab-execution').classList.add('active');
+
+    document.getElementById('executionOutput').innerHTML = '';
+    
+    disableInput();
+    connectWebSocket();
+  }
+
+  //conecta el WebSocket
+  function connectWebSocket() {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/${sessionId}`;
+    
+    websocket = new WebSocket(wsUrl);
+    
+    websocket.onopen = function(event) {
+      addToOutput('🔗 Conectado al servidor de ejecución');
+      
+      //envia comando para iniciar ejecución
+      websocket.send(JSON.stringify({
+        type: 'start_execution'
+      }));
     };
     
-    // Aplica formato a cada token
-    tokens.forEach(t => {
-      const color = colorMap[t.type];
+    websocket.onmessage = function(event) {
+      const data = JSON.parse(event.data);
       
-      if (color && t.length > 0) {
-        quill.formatText(t.index, t.length, { color });
+      switch(data.type) {
+        case 'output':
+          addToOutput(data.message);
+          break;
+          
+        case 'input_request':
+          showInputRequest(data.prompt);
+          break;
+          
+        case 'error':
+          addToOutput(`❌ Error: ${data.message}`);
+          break;
+          
+        default:
+          console.log('Mensaje desconocido:', data);
       }
-    });
+    };
+    
+    websocket.onclose = function(event) {
+      addToOutput('🔌 Conexión cerrada');
+      disableInput();
+    };
+    
+    websocket.onerror = function(error) {
+      addToOutput(`❌ Error de conexión: ${error}`);
+      disableInput();
+    };
+  }
+
+  //Agrega texto al output
+  function addToOutput(message) {
+    const output = document.getElementById('executionOutput');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'output-message';
+    messageDiv.textContent = message;
+    output.appendChild(messageDiv);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  //muestra solicitud el input
+  function showInputRequest(prompt) {
+    isWaitingInput = true;
+    
+    //muestra promt
+    const promptDiv = document.getElementById('inputPrompt');
+    promptDiv.textContent = prompt || 'Entrada requerida:';
+    
+    enableInput();
+    document.getElementById('userInput').focus();
+  }
+
+  //habilita input
+  function enableInput() {
+    document.getElementById('userInput').disabled = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('inputSection').style.display = 'block';
+  }
+  function disableInput() {
+    document.getElementById('userInput').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('inputSection').style.display = 'none';
+    document.getElementById('inputPrompt').textContent = '';
+  }
+
+  //envía el input
+  function sendInput() {
+    if (!isWaitingInput || !websocket) return;
+    
+    const input = document.getElementById('userInput');
+    const value = input.value.trim();
+    
+    if (value === '') {
+      alert('Por favor, ingresa un valor');
+      return;
+    }
+    
+    //envia respuesta al servidor
+    websocket.send(JSON.stringify({
+      type: 'input_response',
+      value: value
+    }));
+
+    addToOutput(`> ${value}`);
+
+    input.value = '';
+    disableInput();
+    isWaitingInput = false;
+  }
+
+  //maneja el enter
+  document.getElementById('userInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      sendInput();
+    }
   });
 
-  const errors = {{ errors_json | tojson }};
-  errors.forEach(e => {
-    // subraya el error lex
-    quill.formatText(e.index, e.length, {
-      underline: true,
-      color: '#ff0000'
-    });
-  });
+  // Funciones para modal (alternativa)
+  function sendModalInput() {
+    const input = document.getElementById('modalInput');
+    const value = input.value.trim();
+    
+    if (value === '') {
+      alert('Por favor, ingresa un valor');
+      return;
+    }
+    
+    if (websocket) {
+      websocket.send(JSON.stringify({
+        type: 'input_response',
+        value: value
+      }));
+    }
+    
+    addToOutput(`> ${value}`);
+    
+    // Cerrar modal
+    document.getElementById('inputModal').style.display = 'none';
+    input.value = '';
+    isWaitingInput = false;
+  }
 
-  const errors_s = {{ errors_s_json | tojson }};
-  errors_s.forEach(e => {
-    // subraya el error semantico
-    quill.formatText(e.index, e.length, {
-      underline: true,
-      color: '#ff0000'
-    });
+  function cancelInput() {
+    document.getElementById('inputModal').style.display = 'none';
+    document.getElementById('modalInput').value = '';
+    
+    if (websocket) {
+      websocket.send(JSON.stringify({
+        type: 'input_response',
+        value: ''
+      }));
+    }
+    
+    isWaitingInput = false;
+  }
+
+  // Cerrar conexión WebSocket al cerrar la página
+  window.addEventListener('beforeunload', function() {
+    if (websocket) {
+      websocket.close();
+    }
   });
 </script>
 

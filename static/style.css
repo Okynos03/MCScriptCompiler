@@ -749,6 +749,346 @@ body.dark-mode .tab-content textarea {
   margin-bottom: 10px;
 }
 
+/* ESTILOS PARA LA CONSOLA DE EJECUCIÓN */
+.execution-console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #F5F5DC;
+  border: 4px solid #8B4513;
+  border-top: none;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .execution-console {
+  background: #2d2d2d;
+  border-color: #444;
+}
+
+.execution-output {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #2F4F4F;
+  background: #F5F5DC;
+  border-bottom: 2px solid #8B4513;
+  min-height: 200px;
+  max-height: 400px;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .execution-output {
+  background: #2d2d2d;
+  color: #e6e6e6;
+  border-bottom-color: #444;
+}
+
+.output-message {
+  margin-bottom: 5px;
+  padding: 2px 0;
+  word-wrap: break-word;
+}
+
+.output-message:last-child {
+  margin-bottom: 0;
+}
+
+.input-section {
+  display: none;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-top: 2px solid #8B4513;
+}
+
+body.dark-mode .input-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-top-color: #444;
+}
+
+.input-prompt {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #8B4513;
+  margin-bottom: 10px;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+
+body.dark-mode .input-prompt {
+  color: #6495ED;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+.input-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-container input {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  padding: 8px;
+  border: 2px solid #8B4513;
+  background: #FFFFFF;
+  color: #2F4F4F;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .input-container input {
+  background: #3d3d3d;
+  border-color: #555;
+  color: #e6e6e6;
+}
+
+.input-container input:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+}
+
+body.dark-mode .input-container input:focus {
+  border-color: #6495ED;
+  box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.3);
+}
+
+.input-container input:disabled {
+  background: #E0E0E0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+body.dark-mode .input-container input:disabled {
+  background: #1a1a1a;
+  color: #666;
+}
+
+.input-container button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(45deg, #32CD32, #90EE90);
+  border: 2px solid #228B22;
+  color: #000;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+
+body.dark-mode .input-container button {
+  background: linear-gradient(45deg, #4169E1, #6495ED);
+  border-color: #2E4BCE;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+.input-container button:hover:not(:disabled) {
+  background: linear-gradient(45deg, #90EE90, #98FB98);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+body.dark-mode .input-container button:hover:not(:disabled) {
+  background: linear-gradient(45deg, #6495ED, #87CEEB);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.input-container button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.input-container button:disabled {
+  background: #E0E0E0;
+  border-color: #CCC;
+  color: #999;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+body.dark-mode .input-container button:disabled {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #666;
+}
+
+/* ESTILOS PARA EL MODAL */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: linear-gradient(45deg, #228B22, #32CD32);
+  border: 4px solid #006400;
+  margin: 15% auto;
+  padding: 20px;
+  width: 80%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.3),
+    inset -2px -2px 0 rgba(0,0,0,0.3),
+    0 10px 25px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+body.dark-mode .modal-content {
+  background: linear-gradient(45deg, #1e3a1e, #2d4a2d);
+  border-color: #0a2f0a;
+  box-shadow: 
+    inset 2px 2px 0 rgba(255,255,255,0.1),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 10px 25px rgba(0,0,0,0.7);
+}
+
+.modal-content h3 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: #FFD700;
+  text-shadow: 2px 2px 0 #000;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+body.dark-mode .modal-content h3 {
+  color: #6495ED;
+}
+
+.modal-content p {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #FFFFFF;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+body.dark-mode .modal-content p {
+  color: #B0C4DE;
+}
+
+.modal-content input {
+  width: 100%;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  padding: 10px;
+  border: 2px solid #8B4513;
+  background: #FFFFFF;
+  color: #2F4F4F;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+body.dark-mode .modal-content input {
+  background: #3d3d3d;
+  border-color: #555;
+  color: #e6e6e6;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.3);
+}
+
+body.dark-mode .modal-content input:focus {
+  border-color: #6495ED;
+  box-shadow: 0 0 0 2px rgba(100, 149, 237, 0.3);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.modal-buttons button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  padding: 10px 20px;
+  border: 2px solid;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-buttons button:first-child {
+  background: linear-gradient(45deg, #32CD32, #90EE90);
+  border-color: #228B22;
+  color: #000;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+}
+
+.modal-buttons button:last-child {
+  background: linear-gradient(45deg, #DC143C, #FF6B6B);
+  border-color: #B22222;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+body.dark-mode .modal-buttons button:first-child {
+  background: linear-gradient(45deg, #4169E1, #6495ED);
+  border-color: #2E4BCE;
+  color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+body.dark-mode .modal-buttons button:last-child {
+  background: linear-gradient(45deg, #8B008B, #DA70D6);
+  border-color: #800080;
+  color: #fff;
+}
+
+.modal-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* SCROLL PERSONALIZADO PARA LA CONSOLA DE EJECUCIÓN */
+.execution-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+.execution-output::-webkit-scrollbar-track {
+  background: #8B4513;
+}
+
+body.dark-mode .execution-output::-webkit-scrollbar-track {
+  background: #2c1810;
+}
+
+.execution-output::-webkit-scrollbar-thumb {
+  background: #FFD700;
+  border-radius: 4px;
+}
+
+body.dark-mode .execution-output::-webkit-scrollbar-thumb {
+  background: #6495ED;
+}
+
+.execution-output::-webkit-scrollbar-thumb:hover {
+  background: #FFA500;
+}
+
+body.dark-mode .execution-output::-webkit-scrollbar-thumb:hover {
+  background: #4169E1;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {

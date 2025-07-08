@@ -1,36 +1,108 @@
 import subprocess
+import asyncio
+import os
+import tempfile
 from static.series import INT, FLOAT, COFRE
 
-#booleano es 0 o 1 pero si hay pedos avisan y lo cambio a True y Flase para que no haya pedos
-#MUCHO CUIDADO CON LA INDEXACION, SOLO SE PEUDE CON COFRE E ITEM, PERO NO SE SABE HASTA ESTE PUNTO SI ITEM SI ES LISTA
-#TIENEN QUE REVISAR QUE SI ES UN STRING NO HAY BRONCA, PERO SI ES UN NUMERO O BOOLEANO QUE MARQUE ERROR
-# LA TRADUCCION (self.errors) Y NO TRATE DE EJECUTAR
-
 class PythonCode:
-    def __init__(self, codigo_intermedio):
+    def __init__(self, codigo_intermedio, execution_session=None):
         self.codigo_intermedio = codigo_intermedio
-        self.python_code = '### C MCScript ###\ndef weak_arithmetic(x):\n\ttry:\n\t\treturn float(x)\n\texcept:\n\t\treturn len(x)\n\n'
+        self.execution_session = execution_session
+        #aquí se va acumulando el script Python completo
+        self.python_code = '''### C MCScript ###
+import asyncio
+import sys
+
+# Variable global para la sesión de ejecución
+_execution_session = None
+
+def set_execution_session(session):
+    global _execution_session
+    _execution_session = session
+
+async def async_input(prompt=""):
+    """Función input asíncrona que se comunica con el frontend"""
+    global _execution_session
+    if _execution_session:
+        return await _execution_session.wait_for_input(prompt)
+    else:
+        # Fallback a input normal si no hay sesión
+        return input(prompt)
+
+async def async_print(message):
+    """Función print asíncrona que envía al frontend"""
+    global _execution_session
+    if _execution_session:
+        await _execution_session.send_output(str(message))
+    else:
+        print(message)
+
+def weak_arithmetic(x):
+    try:
+        return float(x)
+    except:
+        return len(x)
+
+'''
         self.variables = {}
         self.warnings = []
         self.errors = []
 
     def translate(self):
+        #_execution_session guarda la sesión actual el WebSocket
+        #set_execution_session es el setter para inyectar la sesión _tras_ ejecutar el código
+        #async_input/async_print son wrappers sobre input/print que envían/reciben datos al frontend
+        #weak_arithmetic es el helper para operaciones aritméticas débiles pasa strings → len
+        self.python_code = """### C MCScript ###
+import asyncio
+import sys
+
+# Variable global para la sesión de ejecución
+_execution_session = None
+
+def set_execution_session(session):
+    global _execution_session
+    _execution_session = session
+
+async def async_input(prompt=""):
+    global _execution_session
+    if _execution_session:
+        return await _execution_session.wait_for_input(prompt)
+    else:
+        return input(prompt)
+
+async def async_print(message):
+    global _execution_session
+    if _execution_session:
+        await _execution_session.send_output(str(message))
+    else:
+        print(message)
+
+def weak_arithmetic(x):
+    try:
+        return float(x)
+    except:
+        return len(x)
+
+"""
+        #define main() e insertar las instrucciones IR
+        self.python_code += "async def main():\n"
         for ins in self.codigo_intermedio:
             code, _ = self._translate_single_ir_instruction(ins, 0)
-            self.python_code += code + "\n"
+            self.python_code += f"    {code}\n"
+        self.python_code += """
+### FIN MCScript ###
+"""
 
-        #varias otras cosas
 
-        self.python_code += "### FIN MCScript ###\n"
-
-    def _translate_single_ir_instruction(self, instruccion, indent_level): #indent pq pues python super imp indent
+    def _translate_single_ir_instruction(self, instruccion, indent_level):
         parts = instruccion.split(" ", 1)
         opcode = parts[0]
         args = parts[1] if len(parts) > 1 else ""
 
-        def _translate_operand(operand_str, type=None):#a for type aritmetic, c for concat,
+        def _translate_operand(operand_str, type=None):
             operand_str = operand_str.strip()
-            if operand_str in ["true", "false"]: #habria que normalizar esto yo digo que ya directo True False no??
+            if operand_str in ["true", "false"]:
                 return "True" if operand_str == "true" else "False"
             elif operand_str in ["encendido", "apagado"]:
                 return "True" if operand_str == "encendido" else "False"
@@ -44,7 +116,7 @@ class PythonCode:
                 else:
                     return str(num_val)
             except ValueError:
-                pass #then its a varr
+                pass
 
             return operand_str
 
@@ -78,7 +150,7 @@ class PythonCode:
             dest, ops = [s.strip() for s in args.split("=", 1)]
             op1, op2 = [s.strip() for s in ops.split(",")]
             translated_line = f"{dest} = weak_arithmetic({_translate_operand(op1)}) % weak_arithmetic({_translate_operand(op2)})"
-        elif opcode in ["EQ", "LT", "GT", "LTE", "GTE"]:  # Comparisons
+        elif opcode in ["EQ", "LT", "GT", "LTE", "GTE"]:
             dest, ops = [s.strip() for s in args.split("=", 1)]
             op1, op2 = [s.strip() for s in ops.split(",")]
             op_map = {"EQ": "==", "LT": "<", "GT": ">", "LTE": "<=", "GTE": ">="}
@@ -99,21 +171,21 @@ class PythonCode:
             dest, op = [s.strip() for s in args.split("=", 1)]
             translated_line = f"{dest} = not {_translate_operand(op)}"
         elif opcode == "PRINT":
-            translated_line = f"print({_translate_operand(args)})"
+            translated_line = f"await async_print({_translate_operand(args)})"
         elif opcode == "INPUT":
             temp, message = args.split(', ')
-            translated_line = f"{temp} = input({message})"
+            translated_line = f"{temp} = await async_input({message})"
         elif opcode.startswith("ETIQUETA"):
             pass
         elif opcode == "GOTO":
             pass
         elif opcode == "GOTO_IF_FALSE":
             pass
-        elif opcode == "CALL": #siempre van primero los push apram para que los acumulen si es que hay y los pongan en la llamada
+        elif opcode == "CALL":
             pass
         elif opcode == "PUSH_PARAM":
             pass
-        elif opcode == "POP_RETVAL": #creo que no se usa pq ya le ajuste
+        elif opcode == "POP_RETVAL":
             pass
         elif opcode == "RETURN":
             pass
@@ -128,26 +200,20 @@ class PythonCode:
 
         return translated_line, is_special_flow
 
-
     def save_n_exec(self, nombre_archivo="codigo_objeto.py"):
-        #Escribir el .py en disco
         try:
-            with open(nombre_archivo, "w") as f:
+            with open(nombre_archivo, "w", encoding="utf-8") as f:
                 f.write(self.python_code)
             print(f"Código Python generado y guardado en: {nombre_archivo}")
         except IOError as e:
             print(f"Error al escribir el archivo Python '{nombre_archivo}': {e}")
             return f"ERROR al escribir archivo: {e}"
 
-        # 2) Ejecutar capturando stdout/stderr
         try:
             print(f"\n--- Ejecutando {nombre_archivo} ---")
             if self.errors:
-                # Si había errores semánticos o de traducción,
-                # devolvemos la lista de errores
                 return "\n".join(self.errors)
 
-            # Aquí cambiamos a capture_output=True y text=True
             proc = subprocess.run(
                 ["python", nombre_archivo],
                 capture_output=True,
@@ -159,7 +225,6 @@ class PythonCode:
 
             print(f"--- Ejecución de {nombre_archivo} finalizada ---")
             if proc.returncode != 0:
-                # Devolver también el stderr si falló
                 return f"ERROR [{proc.returncode}]: {stderr}"
             return stdout
 
@@ -167,3 +232,66 @@ class PythonCode:
             return "ERROR: comando 'python' no encontrado"
         except Exception as e:
             return f"ERROR inesperado durante ejecución: {e}"
+
+    async def save_n_exec_async(self, nombre_archivo="codigo_objeto.py"):
+        try:
+            #abre para escritura en UTF-8 porque agregaba simbolos raros si no
+            with open(nombre_archivo, "w", encoding="utf-8") as f:
+                f.write(self.python_code)
+            if self.execution_session:
+                await self.execution_session.send_output(
+                    "=== SCRIPT GENERADO ===\n" + self.python_code + "\n=== FIN SCRIPT ==="
+                )
+        except IOError as e:
+            error_msg = f"Error al escribir el archivo Python '{nombre_archivo}': {e}"
+            if self.execution_session:
+                await self.execution_session.send_output(error_msg)
+            return error_msg
+        
+        try:
+            if self.execution_session:
+                await self.execution_session.send_output(f"Iniciando ejecución...")
+            
+            if self.errors:
+                error_output = "\n".join(self.errors)
+                if self.execution_session:
+                    await self.execution_session.send_output(error_output)
+                return error_output
+
+            #ejecuta el código Python de forma especial para manejar los inputs
+            await self._execute_with_session(nombre_archivo)
+            
+            return "Ejecución completada exitosamente"
+
+        except Exception as e:
+            error_msg = f"ERROR inesperado durante ejecución: {e}"
+            if self.execution_session:
+                await self.execution_session.send_output(error_msg)
+            return error_msg
+
+    async def _execute_with_session(self, nombre_archivo):
+        """Ejecuta el código Python con manejo de sesión para inputs"""
+        try:
+            #Preparo sólo lo mínimo voy a dejar que el script importe todo
+            namespace = {'__name__': '__main__'}
+
+            #lee el código (UTF-8)
+            with open(nombre_archivo, 'r', encoding='utf-8') as f:
+                codigo = f.read()
+
+            #Compila y ejecuta en el namespace
+            compiled = compile(codigo, nombre_archivo, 'exec')
+            exec(compiled, namespace)
+
+            # aqui inyecta directamente la sesión en el namespace así async_input y async_print verán el objeto correcto.
+            namespace['_execution_session'] = self.execution_session
+
+            #invoca main() y lo espera
+            main_func = namespace.get('main')
+            if main_func and asyncio.iscoroutinefunction(main_func):
+                await main_func()
+
+        except Exception as e:
+            if self.execution_session:
+                await self.execution_session.send_output(f"Error de ejecución: {e}")
+            raise
