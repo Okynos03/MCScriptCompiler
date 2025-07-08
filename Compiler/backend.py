@@ -130,36 +130,40 @@ class PythonCode:
 
 
     def save_n_exec(self, nombre_archivo="codigo_objeto.py"):
+        #Escribir el .py en disco
         try:
             with open(nombre_archivo, "w") as f:
                 f.write(self.python_code)
             print(f"Código Python generado y guardado en: {nombre_archivo}")
         except IOError as e:
             print(f"Error al escribir el archivo Python '{nombre_archivo}': {e}")
-            return False
+            return f"ERROR al escribir archivo: {e}"
 
+        # 2) Ejecutar capturando stdout/stderr
         try:
             print(f"\n--- Ejecutando {nombre_archivo} ---")
-            if len(self.errors) > 0:
-                print("SE ENCONTRARON ERRORES: \n")
-                for error in self.errors:
-                    print(error + "\n")
-                print(f"--- Ejecución de {nombre_archivo} finalizada ---")
-                return False
-            else:
-                for warning in self.warnings:
-                    print(warning + "\n")
-                result = subprocess.run(["python", nombre_archivo], capture_output=False, check=True)
-                print(f"--- Ejecución de {nombre_archivo} finalizada ---")
-                return True
-        except subprocess.CalledProcessError as e:
-            print(f"El código Python ejecutado terminó con un error (Código de salida: {e.returncode}).")
-            print(f"   Salida de error (stderr):")
-            return False
+            if self.errors:
+                # Si había errores semánticos o de traducción,
+                # devolvemos la lista de errores
+                return "\n".join(self.errors)
+
+            # Aquí cambiamos a capture_output=True y text=True
+            proc = subprocess.run(
+                ["python", nombre_archivo],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            stdout = proc.stdout.strip()
+            stderr = proc.stderr.strip()
+
+            print(f"--- Ejecución de {nombre_archivo} finalizada ---")
+            if proc.returncode != 0:
+                # Devolver también el stderr si falló
+                return f"ERROR [{proc.returncode}]: {stderr}"
+            return stdout
+
         except FileNotFoundError:
-            print(f"Error: El comando 'python' no fue encontrado.")
-            print(f"   Asegúrate de que Python esté instalado y en tu variable de entorno PATH.")
-            return False
+            return "ERROR: comando 'python' no encontrado"
         except Exception as e:
-            print(f"Ocurrió un error inesperado durante la ejecución: {e}")
-            return False
+            return f"ERROR inesperado durante ejecución: {e}"
