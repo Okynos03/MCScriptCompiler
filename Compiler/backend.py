@@ -86,14 +86,21 @@ def weak_arithmetic(x):
         return len(x)
 
 """
-        #define main() e insertar las instrucciones IR
+        #firma main() y abrir su bloque
         self.python_code += "async def main():\n"
-        for ins in self.codigo_intermedio:
-            code, _ = self._translate_single_ir_instruction(ins, 0)
-            self.python_code += f"    {code}\n"
+        if not self.codigo_intermedio:
+            # si no hay nada que hacer pone al menos un pass
+            self.python_code += "    pass\n"
+        else:
+            # por cada instrucción IR, traducirla e indentarla dentro de main()
+            for ins in self.codigo_intermedio:
+                code, _ = self._translate_single_ir_instruction(ins, 0)
+                if code:
+                    self.python_code += f"    {code}\n"
         self.python_code += """
 ### FIN MCScript ###
 """
+
 
 
     def _translate_single_ir_instruction(self, instruccion, indent_level):
