@@ -402,12 +402,22 @@ class Parser:
         self.match(tipo)
         self.match(LPAREN)
         if tipo == CHAT:
+            if self.current().type == RPAREN:
+                self.match(RPAREN)
+                ret = FuncionChat(ExpresionCadena(""))
+                ret.index = self.pos - 1
+                return ret
             arg = self.expresion()
             self.match(RPAREN)
             ret = FuncionChat(arg)
             ret.index = self.pos - 1
             return ret
         elif tipo == CARTEL:
+            if self.current().type == RPAREN:
+                self.match(RPAREN)
+                ret = FuncionCartel(ExpresionCadena(""))
+                ret.index = self.pos - 1
+                return ret
             arg = self.expresion()
             self.match(RPAREN)
             ret = FuncionCartel(arg)

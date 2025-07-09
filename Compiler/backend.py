@@ -30,7 +30,7 @@ async def async_input(prompt=""):
         # Fallback a input normal si no hay sesión
         return input(prompt)
 
-async def async_print(message):
+async def async_print(message=""):
     """Función print asíncrona que envía al frontend"""
     global _execution_session
     if _execution_session:
@@ -72,7 +72,7 @@ async def async_input(prompt=""):
     else:
         return input(prompt)
 
-async def async_print(message):
+async def async_print(message=""):
     global _execution_session
     if _execution_session:
         await _execution_session.send_output(str(message))
@@ -158,6 +158,10 @@ def weak_arithmetic(x):
             dest, ops = [s.strip() for s in args.split("=", 1)]
             op1, op2 = [s.strip() for s in ops.split(",")]
             translated_line = f"{dest} = weak_arithmetic({_translate_operand(op1)}) % weak_arithmetic({_translate_operand(op2)})"
+        elif opcode == "NEG":
+            dest, ops = [s.strip() for s in args.split("=", 1)]
+            op1 = ops.strip()
+            translated_line = f"{dest} = (-1 * weak_arithmetic({_translate_operand(op1)}))"
         elif opcode in ["EQ", "LT", "GT", "LTE", "GTE"]:
             dest, ops = [s.strip() for s in args.split("=", 1)]
             op1, op2 = [s.strip() for s in ops.split(",")]

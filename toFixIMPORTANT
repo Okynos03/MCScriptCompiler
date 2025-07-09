@@ -1,14 +1,1 @@
-include chat
-
-and full implementation of cartel for input
-
-check how does it handle the typing when chest on chest
-
-^ wast considered in grammar. termino         →   expresion_potencia resto_termin, expresion_potencia  →   factor resto_potencia ,  resto_potencia      →   ^ expresion_potencia // Right-associativity for exponentiation
-    | ε
-
-corregir for !!!!!
-
-maybe check global status, also chest got to respect types not plain items and so do functions (but thats a syntaxis change, maybe only the chest thing)
-
-items should be able to particiapte in string concatenation
+Exclude predefined executing functions and python key words in 6000.

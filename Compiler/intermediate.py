@@ -41,16 +41,20 @@ class GeneradorIntermedio:
         valor_temp = self.generar(nodo.valor)
         if nodo.es_acceso:
             indice = self.generar(nodo.indice)
-            self.emitir(f"SET_LIST_ITEM {nodo.nombre}, {indice}, {valor_temp}")
+            self.emitir(f"SET_LIST_ITEM MC_{nodo.nombre}, {indice}, {valor_temp}")
+            #self.emitir(f"SET_LIST_ITEM {nodo.nombre}, {indice}, {valor_temp}")
         else:
-            self.emitir(f"ASSIGN {nodo.nombre} = {valor_temp}")
+            self.emitir(f"ASSIGN MC_{nodo.nombre} = {valor_temp}")
+            #self.emitir(f"ASSIGN {nodo.nombre} = {valor_temp}")
 
     def generar_SentenciaDeclaracion(self, nodo):
         tipo = nodo.tipo if isinstance(nodo.tipo, str) else self.obtener_nombre_tipo(nodo.tipo)
-        self.emitir(f"# Declaración de {tipo} {nodo.nombre}")
+        self.emitir(f"# Declaración de {tipo} MC_{nodo.nombre}")
+        #self.emitir(f"# Declaración de {tipo} {nodo.nombre}")
         if nodo.valor:
             valor_temp = self.generar(nodo.valor)
-            self.emitir(f"ASSIGN {nodo.nombre} = {valor_temp}")
+            self.emitir(f"ASSIGN MC_{nodo.nombre} = {valor_temp}")
+            #self.emitir(f"ASSIGN MC_{nodo.nombre} = {valor_temp}")
         else:
             pass
 
@@ -60,18 +64,22 @@ class GeneradorIntermedio:
     def generar_DeclaracionFuncion(self, nodo):
         #self.entorno.entrar_ambito()
         self.offset_local_actual = 0
-        etiqueta_funcion = f"FUNC_{nodo.nombre}"
+        etiqueta_funcion = f"FUNC_MC_{nodo.nombre}"
+        #etiqueta_funcion = f"FUNC_{nodo.nombre}"
         self.emitir(f"ETIQUETA {etiqueta_funcion}:")
-        self.etiquetas_funciones[nodo.nombre] = etiqueta_funcion
+        self.etiquetas_funciones[f"MC_{nodo.nombre}"] = etiqueta_funcion
+        #self.etiquetas_funciones[nodo.nombre] = etiqueta_funcion
         for param in nodo.parametros:
             # self.emitir(f"PARAM_DECL {param} OFFSET {self.offset_local_actual}") #innecesario pq pues python
-            self.emitir(f"PARAM_DECL {param}")
+            self.emitir(f"PARAM_DECL MC_{param}")
+            #self.emitir(f"PARAM_DECL {param}")
             self.offset_local_actual += 4 #solo si se usa ens supongo pero no se va a usar aca pq pues python :)
             #self.entorno.declarar(param, Simbolo(param, tipo='item', ambito='local'))
         for sentencia in nodo.cuerpo:
             self.generar(sentencia)
         # self.emitir(f"# ALLOC_LOCALS {self.offset_local_actual}") # si se usa pila dejar el espacio, epro no creo puro trad a python y ya
-        self.emitir(f"FIN_FUNC {nodo.nombre}")
+        self.emitir(f"FIN_FUNC MC_{nodo.nombre}")
+        #self.emitir(f"FIN_FUNC {nodo.nombre}")
         #self.entorno.salir_ambito()
 
     def generar_SentenciaTP(self, nodo):
@@ -158,10 +166,12 @@ class GeneradorIntermedio:
         return nodo.valor
 
     def generar_ExpresionIdentificador(self, nodo):
-        return nodo.nombre
+        return f"MC_{nodo.nombre}"
+        #return nodo.nombre
 
     def generar_ExpresionLlamadaFuncion(self, nodo):
-        etiqueta_entrada_funcion = self.etiquetas_funciones.get(nodo.funcion)
+        etiqueta_entrada_funcion = self.etiquetas_funciones.get(f"MC_{nodo.funcion}")
+        #etiqueta_entrada_funcion = self.etiquetas_funciones.get(nodo.funcion)
         if not etiqueta_entrada_funcion:
             raise Exception(f"Error interno del generador: Etiqueta de función '{nodo.funcion}' no encontrada.")#me recomendo poner esto gemini lol
 
@@ -205,7 +215,8 @@ class GeneradorIntermedio:
         return temp_resultado
 
     def generar_ExpresionAccesoArreglo(self, nodo):
-        referencia_lista_ir = nodo.nombre
+        referencia_lista_ir = f"MC_{nodo.nombre}"
+        #referencia_lista_ir = nodo.nombre
         indice_generado = self.generar(nodo.indice)
         temp_resultado = self.nuevo_temp()
 

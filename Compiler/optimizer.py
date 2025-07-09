@@ -119,8 +119,8 @@ class OptimizadorCodigoIntermedio:
                                     else:
                                         pass
                                 elif opcode == "MOD":
-                                    if op2_val != 0 and type(op1_val) is int and type(op2_val) is int:
-                                        resultado = op1_val / op2_val
+                                    if op2_val != 0:
+                                        resultado = op1_val % op2_val
                                     else:
                                         pass
                                 elif opcode == "POW":

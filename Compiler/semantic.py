@@ -360,7 +360,7 @@ class AnalizadorSemantico:
         if nombre == 'ANTORCHAR':
             args = [nodo.valor]
             tipo = self.analizar(args[0])
-            if args and tipo != 'palanca':
+            if args and tipo not in  ['palanca', 'item']:
                 err_val = "[Error] ANTORCHAR espera una expresión de tipo palanca"
                 self.errores.append(
                     Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
