@@ -250,7 +250,7 @@ class Parser:
         inicial = self.sentencia_asignacion()
         cond = self.expresion()
         self.match(SEMICOLON)
-        actualizacion = self.expresion()
+        actualizacion = self.sentencia_asignacion()
         self.match(RPAREN)
         self.match(LBRACE)
         cuerpo = self.lista_sentencias()
