@@ -16,7 +16,7 @@ async def async_input(prompt=""):
     else:
         return input(prompt)
 
-async def async_print(message):
+async def async_print(message=""):
     global _execution_session
     if _execution_session:
         await _execution_session.send_output(str(message))
@@ -30,8 +30,9 @@ def weak_arithmetic(x):
         return len(x)
 
 async def main():
-    t0 = await async_input("adios:")
-    hola = t0
-    await async_print(hola)
+    await async_print("¿Hola cómo estás?")
+    t0 = await async_input("ingresa tu respuesta:")
+    MC_respuesta = t0
+    await async_print(MC_respuesta)
 
 ### FIN MCScript ###

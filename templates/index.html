@@ -13,6 +13,7 @@
   <script src="/static/js/darkMode.js" defer></script>
   <script src="/static/js/lineNumbers.js" defer></script>
   <script src="/static/js/lineasTab.js" defer></script>
+  <script src="/static/js/documentation.js" defer></script>
 </head>
 <body>
   <!-- Partículas de decoración -->
@@ -32,6 +33,7 @@
   <div class="toggle-container">
     <button id="toggleAnalysis" type="button">Mostrar Consola</button>
     <!-- El botón de modo oscuro se agregará aquí dinámicamente -->
+    <button id="helpBtn" type="button">💡 Ayuda</button>
   </div>
   
   <div class="container">
@@ -123,6 +125,108 @@
       <div class="modal-buttons">
         <button onclick="sendModalInput()">Enviar</button>
         <button onclick="cancelInput()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de documentación -->
+  <div id="documentationModal" class="modal documentation-modal">
+    <div class="modal-content documentation-content">
+      <div class="modal-header">
+        <div class="modal-title-section">
+          <img src="/static/images/logoMCS.png" alt="MCScript Logo" class="modal-logo-centered">
+          <h3>Bienvenido a MCScript</h3>
+        </div>
+        <button class="close-btn" onclick="closeDocumentation()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="doc-section">
+          <h4>🎯 ¿Qué es MCScript?</h4>
+          <p class="mcs-explanation">MCScript es un lenguaje de programación inspirado en Minecraft que te permite crear código de forma sencilla y divertida,
+            usando palabras del videojuego para representar conceptos de la programación y facilitar su entendimiento.
+          </p>
+        </div>
+        
+        <div class="doc-section">
+          <h4>📝 Hola Mundo en MCScript</h4>
+          <div class="code-example">
+            <pre>spawnear {
+      chat("Hola MCScript!!");
+}
+morir;</pre>
+          </div>
+        </div>
+
+        <div class="doc-section">
+          <h4>🔧 ¿Cómo usar el compilador?</h4>
+          <ol>
+            <li><strong>Escribir código</strong>: Deberás de escribir el código que deseas probar, puedas usar el ejemplo de arriba como inicio</li>
+            <li><strong>Compilar</strong>: Para poder usar el código que escribiste, debes de dar click sobre el botón <strong>"Compilar"</strong> debajo de la sección de código</li>
+            <li><strong>Ejecutar</strong>: Una vez que compilaste el código, ahora lo puedes ejecutar dando click en el botón <strong>"Ejecutar"</strong> y el resultado se mostrará en la pestaña de Ejecución de la consola</li>
+          </ol>
+          <h5>❓<strong> NOTAS IMPORTANTES</strong></h5>
+          <ul>
+            <li>Si modificas tu código y quieres volver a probarlo, primero debes compilar nuevamente el código y después ejecutarlo, de lo contrario volverás a ejecutar el código anterior</li>
+            <li>La Consola tiene varias pestañas en las que puedes visualizar información acerca del proceso de compilación pero la más importante y la que muestra el resultado de tu código es la de "Ejecución"</li>
+            <li>Mientras escribres tu código es normal que aparezcan subrayadas las palabras que escribes o se ilumine de color rojo la línea que escribiste, pero no te asustes, es el indicador de errores en tiempo real que tiene el compilador</li>
+          </ul>
+        </div>
+        
+        <div class="doc-section">
+          <h4>🔧 Tipos de Datos</h4>
+          <ul>
+            <li><strong>bloque</strong>: Este define todos los números enteros (ej: 42, -10)</li>
+            <li><strong>losa</strong>: Con este podemos poner números decimales (ej: 3.14, -2.5)</li>
+            <li><strong>hoja</strong>: Este tipo de dato solo acepta caracteres individuales (ej: "a", "b")</li>
+            <li><strong>libro</strong>: Este otro acepta cadenas de texto completas (ej: "hola", "adios)</li>
+            <li><strong>palanca</strong>: Este es el booleano, es decir, sólo acepta valores sí o no que son "encendido" y "apagado" respectivamente</li>
+          </ul>
+        </div>
+        
+        <div class="doc-section">
+          <h4>🎮 Palabras Clave</h4>
+          <ul>
+            <li><strong>spawnear</strong>: Esta palabra define el inicio del bloque de código</li>
+            <li><strong>morir</strong>: Como su nombre indica, es la muerte o el fin del bloque de código</li>
+          </ul>
+        </div>
+
+        <div class="doc-section">
+          <h4>🎮 Bucles</h4>
+          <ul>
+            <li><strong>spawnear</strong>: Esta palabra define el inicio del bloque de código</li>
+            <li><strong>morir</strong>: Como su nombre indica, es la muerte o el fin del bloque de código</li>
+          </ul>
+        </div>
+
+        <div class="doc-section">
+          <h4>🎮 Condicionales</h4>
+          <ul>
+            <li><strong>spawnear</strong>: Esta palabra define el inicio del bloque de código</li>
+            <li><strong>morir</strong>: Como su nombre indica, es la muerte o el fin del bloque de código</li>
+          </ul>
+        </div>
+        
+        <div class="doc-section">
+          <h4>💡 Ejemplo Completo</h4>
+          <div class="code-example">
+            <pre>spawnear {
+      chat("¿Hola cómo estás?");
+      libro respuesta = cartel("ingresa tu respuesta:");
+      //imprimimos respuesta
+      chat(respuesta);
+}
+morir;</pre>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <label class="dont-show-again">
+          <input type="checkbox" id="dontShowAgain"> 
+          <span>No mostrar de nuevo</span>
+        </label>
+        <button onclick="closeDocumentation()">Cerrar</button>
       </div>
     </div>
   </div>

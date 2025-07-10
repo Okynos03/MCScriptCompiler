@@ -1095,6 +1095,279 @@ body.dark-mode .execution-output::-webkit-scrollbar-thumb:hover {
 .ql-editor .error-line {
   background-color: rgba(255, 0, 0, 0.1);
 }
+
+/* ESTILOS PARA EL MODAL DE DOCUMENTACIÓN */
+.documentation-modal .modal-content {
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  margin: 5% auto;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #006400;
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: #0a2f0a;
+}
+
+.modal-title-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-logo-centered {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Ajustar el header para esta versión */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.close-btn {
+  position: relative;
+  top: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #FFD700;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+body.dark-mode .close-btn {
+  color: #6495ED;
+}
+
+.close-btn:hover {
+  background: rgba(255, 215, 0, 0.2);
+  transform: scale(1.1);
+}
+
+body.dark-mode .close-btn:hover {
+  background: rgba(100, 149, 237, 0.2);
+}
+
+.modal-body {
+  margin-bottom: 20px;
+}
+
+.doc-section {
+  margin-bottom: 25px;
+}
+
+.doc-section h4 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #FFD700;
+  text-shadow: 1px 1px 0 #000;
+  margin-bottom: 12px;
+}
+
+.doc-section h5 {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #ff0000;
+  text-shadow: 1px 1px 0 #000;
+  margin-bottom: 12px;
+}
+
+body.dark-mode .doc-section h4 {
+  color: #6495ED;
+}
+
+.doc-section p {
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.doc-section p.mcs-explanation {
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.doc-section ul {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-left: 20px;
+  color: #FFFFFF;
+}
+.doc-section ol {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  margin-left: 20px;
+  color: #FFFFFF;
+}
+
+body.dark-mode .doc-section ul {
+  color: #B0C4DE;
+}
+
+body.dark-mode .doc-section ol {
+  color: #B0C4DE;
+}
+
+.doc-section li {
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.code-example {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #8B4513;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 10px 0;
+}
+
+body.dark-mode .code-example {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: #444;
+}
+
+.code-example pre {
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #FFFFFF;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+body.dark-mode .code-example pre {
+  color: #B0C4DE;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 2px solid #006400;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: #0a2f0a;
+}
+
+.dont-show-again {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+body.dark-mode .dont-show-again {
+  color: #B0C4DE;
+}
+
+.dont-show-again input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.dont-show-again:hover {
+  color: #FFD700;
+}
+
+body.dark-mode .dont-show-again:hover {
+  color: #6495ED;
+}
+
+/* Scroll personalizado para el modal */
+.documentation-modal .modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.documentation-modal .modal-content::-webkit-scrollbar-track {
+  background: #8B4513;
+}
+
+body.dark-mode .documentation-modal .modal-content::-webkit-scrollbar-track {
+  background: #2c1810;
+}
+
+.documentation-modal .modal-content::-webkit-scrollbar-thumb {
+  background: #FFD700;
+  border-radius: 4px;
+}
+
+body.dark-mode .documentation-modal .modal-content::-webkit-scrollbar-thumb {
+  background: #6495ED;
+}
+
+/* Responsive para el modal */
+@media (max-width: 768px) {
+  .documentation-modal .modal-content {
+    width: 95%;
+    margin: 2% auto;
+    max-height: 95vh;
+  }
+  
+  .modal-header h3 {
+    font-size: 10px;
+  }
+  
+  .doc-section h4 {
+    font-size: 10px;
+  }
+  
+  .doc-section p,
+  .doc-section ul {
+    font-size: 9px;
+  }
+  
+  .code-example pre {
+    font-size: 15px;
+  }
+  
+  .dont-show-again {
+    font-size: 10px;
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
