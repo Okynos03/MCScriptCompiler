@@ -26,8 +26,9 @@ def weak_arithmetic(x):
     except: return len(x)
 
 async def main():
-    while 0:
-        await async_print("hey")
-        t1 = 0
-        await async_print("hey")
+    MC_x = 0
+    while MC_x < 10:
+        await async_print("while")
+        t1 = weak_arithmetic(MC_x) + weak_arithmetic(1)
+        MC_x = t1
 ### FIN MCScript ###

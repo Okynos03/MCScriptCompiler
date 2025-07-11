@@ -45,57 +45,86 @@ class PythonCode:
 
 
 
-    # — Helpers para FOR numerico —
+    # — Helpers para FOR numérico —
     def _is_for_loop_start(self, ir, idx):
+        # La asignación inicial + etiqueta + UNA comparación (EQ/LT/LTE/GT/GTE) indican un for
         return (
             ir[idx].startswith("ASSIGN") and
             idx+1 < len(ir) and ir[idx+1].startswith("ETIQUETA FOR_START") and
-            idx+2 < len(ir) and ir[idx+2].startswith("LT ")
+            idx+2 < len(ir) and
+            ir[idx+2].split()[0] in ("EQ","LT","LTE","GT","GTE")
         )
 
     def _translate_for_loop(self, ir, i, indent):
-        # Desempaqueta ASSIGN, ETIQUETA FOR_START, LT, ADD, GOTO, ETIQUETA FOR_END
-        _, assign_args = ir[i].split(" ",1)
-        var, start = [s.strip() for s in assign_args.split("=",1)]
-        _, lt_args = ir[i+2].split(" ",1)
-        _, rhs = lt_args.split("=",1)
-        _, end = [s.strip() for s in rhs.split(",",1)]
+        # 1) Desempaquetar la asignación inicial (var = start)
+        _, assign_args = ir[i].split(" ", 1)
+        var, start = [s.strip() for s in assign_args.split("=", 1)]
 
-        # buscamos paso (ADD antes del GOTO)
-        j = i+3
-        while j < len(ir) and not ir[j].startswith("GOTO "):
-            j += 1
-        _, add_args = ir[j-2].split(" ",1)
-        _, ops = add_args.split("=",1)
-        _, step = [s.strip() for s in ops.split(",",1)]
+        # 2) Extraer la etiqueta de inicio (FOR_STARTx:)
+        _, label = ir[i + 1].split(" ", 1)
+        start_label = label.rstrip(":")
 
-        # emitimos la cabecera del for
-        self.python_code += indent + f"for {var} in range({start}, {end}, {step}):\n"
-        # traducimos el cuerpo
+        # 3) Encontrar el salto de retorno del for (GOTO FOR_STARTx)
+        j_back = next(
+            idx for idx in range(i + 2, len(ir))
+            if ir[idx].startswith("GOTO ")
+            and ir[idx].split(" ", 1)[1].strip() == start_label
+        )
+
+        # 4) Determinar el paso; puede venir en un ADD o un SUB justo antes de j_back
+        step_instr = ir[j_back - 2]
+        opcode_step, args_step = step_instr.split(" ", 1)  # p.ej. "ADD t1 = x, 1" o "SUB t1 = x, 1"
+        _, ops = args_step.split("=", 1)
+        op1, op2 = [s.strip() for s in ops.split(",", 1)]
+        raw_step = op2  # p.ej. "1"
+        if opcode_step == "ADD":
+            step = raw_step
+        elif opcode_step == "SUB":
+            # decremento → paso negativo
+            step = f"-{raw_step}"
+        else:
+            step = raw_step  # caso genérico
+
+        # 5) Extraer la comparación que fija el límite (en ir[i+2])
+        opcode_cmp, comp_args = ir[i + 2].split(" ", 1)  # p.ej. "LT t0 = x, 5" o "GT t0 = x, 0"
+        _, rhs = comp_args.split("=", 1)
+        parts = rhs.split()  # ["x", ">", "0"]
+        end = parts[-1].strip()
+
+        # 6) Calcular el end_expr según el comparador
+        if opcode_cmp == "LT":
+            end_expr = end
+        elif opcode_cmp == "LTE":
+            end_expr = f"{end} + 1"
+        elif opcode_cmp == "GT":
+            end_expr = end
+        elif opcode_cmp == "GTE":
+            end_expr = f"{end} - 1"
+        else:
+            end_expr = end  # otros comparadores
+
+        # 7) Emitir el for en Python
+        self.python_code += indent + f"for {var} in range({start}, {end_expr}, {step}):\n"
+
+        # 8) Traducir el cuerpo (entre i+4 y j_back-2)
         k = i + 4
-        lim = j - 2
-        while k < lim:
-            # 1) For anidado
+        body_end = j_back - 2
+        while k < body_end:
             if self._is_for_loop_start(ir, k):
-                k = self._translate_for_loop(ir, k, indent + "    ")
-                continue
-            # 2) While anidado
+                k = self._translate_for_loop(ir, k, indent + "    "); continue
             if self._is_while_loop_start(ir, k):
-                k = self._translate_while_loop(ir, k, indent + "    ")
-                continue
-            # 3) If anidado
+                k = self._translate_while_loop(ir, k, indent + "    "); continue
             if self._is_if_start(ir, k):
-                k = self._translate_if_block(ir, k, indent + "    ")
-                continue
+                k = self._translate_if_block(ir, k, indent + "    "); continue
 
-            # 4) Instrucción atómica
             line, _ = self._translate_single_ir_instruction(ir[k], 0)
             if line:
                 self.python_code += indent + "    " + line.strip() + "\n"
             k += 1
 
-        # Finalmente devolvemos la posición tras ETIQUETA FOR_END
-        return j + 2
+        # 9) Saltar al final del for (después de ETIQUETA FOR_ENDx)
+        return j_back + 2
+
 
     def _emitir_cabecera(self):
         # Aquí pones TODO ese string de la cabecera
@@ -134,22 +163,59 @@ async def main():
         return ir[idx].startswith("ETIQUETA WHILE_START")
 
     def _translate_while_loop(self, ir, i, indent):
-        # etiqueta de inicio ya emitida en IR
-        cond_line, _ = self._translate_single_ir_instruction(ir[i+1], 0)
-        _, cond_expr = cond_line.split("=",1)
+        # --- 1) Encontrar y traducir la comparación ---
+        comp_idx = next(
+            j for j in range(i+1, len(ir))
+            if ir[j].split()[0] in ("EQ","LT","GT","LTE","GTE")
+        )
+        comp_line, _ = self._translate_single_ir_instruction(ir[comp_idx], 0)
+        # comp_line será algo como "t0 = MC_contador > 0"
+        _, cond_expr = comp_line.split("=", 1)
         cond = cond_expr.strip()
 
-        # encontramos ETIQUETA WHILE_END
-        end_idx = next(j for j in range(i+2, len(ir))
-                       if ir[j].startswith("ETIQUETA") and "WHILE_END" in ir[j])
+        # --- 2) Encontrar la instrucción GOTO_IF_FALSE ---
+        goto_idx = next(
+            j for j in range(comp_idx+1, len(ir))
+            if ir[j].startswith("GOTO_IF_FALSE")
+        )
+        # Extraer la etiqueta de fin
+        _, rest = ir[goto_idx].split(" ", 1)        # "t0, WHILE_END1"
+        _, end_label = [s.strip() for s in rest.split(",", 1)]
 
+        # --- 3) Emitir el while con la condición correcta ---
         self.python_code += indent + f"while {cond}:\n"
-        for k in range(i+2, end_idx):
-            body, _ = self._translate_single_ir_instruction(ir[k], 0)
-            if body:
-                self.python_code += indent*2 + body.strip() + "\n"
 
+        # --- 4) Traducir cuerpo hasta la etiqueta WHILE_END ---
+        #    Buscamos índice de ETIQUETA ... WHILE_END1
+        end_idx = next(
+            j for j in range(goto_idx+1, len(ir))
+            if ir[j].startswith("ETIQUETA") and end_label in ir[j]
+        )
+
+        k = goto_idx + 1
+        while k < end_idx:
+            # while anidado
+            if self._is_while_loop_start(ir, k):
+                k = self._translate_while_loop(ir, k, indent + "    ")
+                continue
+            # for anidado
+            if self._is_for_loop_start(ir, k):
+                k = self._translate_for_loop(ir, k, indent + "    ")
+                continue
+            # if anidado
+            if self._is_if_start(ir, k):
+                k = self._translate_if_block(ir, k, indent + "    ")
+                continue
+
+            # instrucción atómica
+            body_line, _ = self._translate_single_ir_instruction(ir[k], 0)
+            if body_line:
+                self.python_code += indent + "    " + body_line.strip() + "\n"
+            k += 1
+
+        # --- 5) Continuar después del WHILE_END ---
         return end_idx + 1
+
 
     # — Detectar un “if” que empieza con GOTO_IF_FALSE —
     def _is_if_start(self, ir, idx):
