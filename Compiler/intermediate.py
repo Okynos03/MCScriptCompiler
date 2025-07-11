@@ -102,6 +102,7 @@ class GeneradorIntermedio:
         for sentencia_entonces in nodo.entonces:
             self.generar(sentencia_entonces)
 
+
         if nodo.sino:
             self.emitir(f"GOTO {etiqueta_fin_si}")
             self.emitir(f"ETIQUETA {etiqueta_sino}:")

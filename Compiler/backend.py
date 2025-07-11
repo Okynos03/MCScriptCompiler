@@ -221,7 +221,7 @@ async def main():
     def _is_if_start(self, ir, idx):
         return ir[idx].split(" ", 1)[0] == "GOTO_IF_FALSE"
 
-    def _translate_if_block(self, ir, i, indent):
+    def _translate_if_block(self, ir, i, indent, is_if=True, is_else=False, label_end=None):
         """
         Traduce desde GOTO_IF_FALSE cond, label_else
         hasta ETIQUETA ENDIF… saltando GOTO finales,
@@ -229,24 +229,33 @@ async def main():
         Devuelve el nuevo índice tras haber consumido TODO el if/else.
         """
         # --- 1) extraer cond y label_else
-        parts = ir[i].split(" ", 1)[1]
-        cond_str, label_else = [s.strip() for s in parts.split(",", 1)]
-        # traducimos operando si fuera literal
-        cond_py = cond_str  # en tu caso MC_pr o literal "True"/"False"
-        self.python_code += indent + f"if {cond_py}:\n"
+        if is_if:
+            parts = ir[i].split(" ", 1)[1]
+            cond_str, label_else = [s.strip() for s in parts.split(",", 1)]
+            has_else = label_else[0:4] == "ELSE"
+            # traducimos operando si fuera literal
+            cond_py = cond_str  # en tu caso MC_pr o literal "True"/"False"
+            self.python_code += indent + f"if {cond_py}:\n" if not is_else else  indent + f"elif {cond_py}:\n"
+            j = i + 1
+        else:
+            has_else = False
+            label_else = label_end
+            self.python_code += indent + f"else:\n"
+            j = i
 
         # --- 2) cuerpo THEN: desde i+1 hasta GOTO <label_end> o ETIQUETA <label_else> ---
-        j = i + 1
-        label_end = None
         while j < len(ir):
             instr = ir[j]
-            # si es salto incondicional dentro del then, guarda el label_end y rompe
-            if instr.startswith("GOTO "):
-                label_end = instr.split(" ",1)[1].strip()
+            # si es salto incondicional dentro del then, guarda el label_end
+            if has_else and instr[0:10] == "GOTO ENDIF":
+                label_end = instr.split(" ",1)[1].strip() if label_end is None else label_end
                 j += 1
-                break
+                continue
             # si alcanzamos la etiqueta de else, terminamos then
-            if instr.startswith("ETIQUETA") and instr.endswith(f"{label_else}:"):
+            if (instr.startswith("ETIQUETA") and instr.endswith(f"{label_else}:")) \
+                    or \
+                    (not has_else and instr.startswith("ETIQUETA") and instr.endswith(f"{label_else}")):
+                j += 1
                 break
 
             # chequea anidamiento de estructuras
@@ -266,54 +275,58 @@ async def main():
                 self.python_code += indent + "    " + line.strip() + "\n"
             j += 1
 
-        print(label_else, ir[j], "dembele")
-        # --- 3) ELSE? emitimos “else:” si existe etiqueta de else ---
-        # si la siguiente instrucción es ETIQUETA <label_else> entonces hay else
-        if label_else.startswith("ELSE") and \
-           j < len(ir) and ir[j] == f"ETIQUETA {label_else}:":
-            j += 1
-            # — Cadena de elif —
-            # Mientras veas GOTO_IF_FALSE, lo traducimos a "elif ..."
-            print(ir[j])
-            while j < len(ir) and (ir[j].startswith("GOTO_IF_FALSE") or ir[j].startswith("ETIQUETA ELSE")):
-                print("dembo", j)
-                if ir[j].startswith("ETIQUETA ELSE"):
-                    j += 1
-                    if not self._is_if_start(ir, j):
-                        self.python_code += indent + "else:\n"
-                        while j < len(ir) and ir[j] != f"ETIQUETA {label_end}:":
-                            line, _ = self._translate_single_ir_instruction(ir[j], 0)
-                            if line:
-                                self.python_code += indent + "    " + line.strip() + "\n"
-                            j += 1
-                        return j
+        if has_else:
+            j = self._translate_if_block(ir, j, indent, self._is_if_start(ir, j), is_else=True, label_end=label_end)
 
-                print("2", ir[j])
-                # extraer condición y siguiente etiqueta
-                _, rest = ir[j].split(" ", 1)
-                cond_i, next_else = [s.strip() for s in rest.split(",", 1)]
-                self.python_code += indent + f"elif {cond_i}:\n"
-                j += 1
-                # traducir el bloque de este elif exactamente igual que un if
-                while j < len(ir):
-                    if ir[j].startswith("GOTO ") or ir[j].startswith("ETIQUETA ELSE") or ir[j].startswith("ETIQUETA ENDIF"):
-                        j += 1
-                        break
-                    # detectar estructuras anidadas aquí...
-                    if self._is_if_start(ir, j):
-                        print("demebeeeeleee")
-                        j = self._translate_if_block(ir, j, indent + "    ")
-                        while ir[j].startswith("ETIQUETA ENDIF"):
-                            j += 1
-                        continue
-                    if self._is_for_loop_start(ir, j):
-                        j = self._translate_for_loop(ir, j, indent + "    "); continue
-                    if self._is_while_loop_start(ir, j):
-                        j = self._translate_while_loop(ir, j, indent + "    "); continue
-                    line, _ = self._translate_single_ir_instruction(ir[j], 0)
-                    if line:
-                        self.python_code += indent + "    " + line.strip() + "\n"
-                    j += 1
+        return j
+        # print(label_else, ir[j], "dembele")
+        # # --- 3) ELSE? emitimos “else:” si existe etiqueta de else ---
+        # # si la siguiente instrucción es ETIQUETA <label_else> entonces hay else
+        # if label_else.startswith("ELSE") and \
+        #    j < len(ir) and ir[j] == f"ETIQUETA {label_else}:":
+        #     j += 1
+        #     # — Cadena de elif —
+        #     # Mientras veas GOTO_IF_FALSE, lo traducimos a "elif ..."
+        #     print(ir[j])
+        #     while j < len(ir) and (ir[j].startswith("GOTO_IF_FALSE") or ir[j].startswith("ETIQUETA ELSE")):
+        #         print("dembo", j)
+        #         if ir[j].startswith("ETIQUETA ELSE"):
+        #             j += 1
+        #             if not self._is_if_start(ir, j):
+        #                 self.python_code += indent + "else:\n"
+        #                 while j < len(ir) and ir[j] != f"ETIQUETA {label_end}:":
+        #                     line, _ = self._translate_single_ir_instruction(ir[j], 0)
+        #                     if line:
+        #                         self.python_code += indent + "    " + line.strip() + "\n"
+        #                     j += 1
+        #                 return j
+        #
+        #         print("2", ir[j])
+        #         # extraer condición y siguiente etiqueta
+        #         _, rest = ir[j].split(" ", 1)
+        #         cond_i, next_else = [s.strip() for s in rest.split(",", 1)]
+        #         self.python_code += indent + f"elif {cond_i}:\n"
+        #         j += 1
+        #         # traducir el bloque de este elif exactamente igual que un if
+        #         while j < len(ir):
+        #             if ir[j].startswith("GOTO ") or ir[j].startswith("ETIQUETA ELSE") or ir[j].startswith("ETIQUETA ENDIF"):
+        #                 j += 1
+        #                 break
+        #             # detectar estructuras anidadas aquí...
+        #             if self._is_if_start(ir, j):
+        #                 print("demebeeeeleee")
+        #                 j = self._translate_if_block(ir, j, indent + "    ")
+        #                 while ir[j].startswith("ETIQUETA ENDIF"):
+        #                     j += 1
+        #                 continue
+        #             if self._is_for_loop_start(ir, j):
+        #                 j = self._translate_for_loop(ir, j, indent + "    "); continue
+        #             if self._is_while_loop_start(ir, j):
+        #                 j = self._translate_while_loop(ir, j, indent + "    "); continue
+        #             line, _ = self._translate_single_ir_instruction(ir[j], 0)
+        #             if line:
+        #                 self.python_code += indent + "    " + line.strip() + "\n"
+        #             j += 1
 
         #print(j, ir[j], "imporrtant")
         return j
@@ -447,6 +460,7 @@ async def main():
         return translated_line, is_special_flow
 
     def save_n_exec(self, nombre_archivo="codigo_objeto.py"):
+        print(self.python_code)
         try:
             with open(nombre_archivo, "w", encoding="utf-8") as f:
                 f.write(self.python_code)
