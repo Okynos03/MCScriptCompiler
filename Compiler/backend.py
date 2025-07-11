@@ -451,11 +451,11 @@ async def main():
         elif opcode == "GET_LIST_ITEM":
             dest, ops = [s.strip() for s in args.split("=")]
             list_var, index_var = [s.strip() for s in ops.split(",")]
-            translated_line = f"{dest} = safe_get({_translate_operand(list_var)}, {_translate_operand(index_var)})"
+            translated_line = f"{dest} = ({_translate_operand(list_var)}, {_translate_operand(index_var)})"
         elif opcode == "SET_LIST_ITEM":
             ops, value = [s.strip() for s in args.split("=")]
             list_var, index_var = [s.strip() for s in ops.split(",")]
-            translated_line = f"safe_set({_translate_operand(list_var)}, {_translate_operand(index_var)}, {_translate_operand(value)})"
+            translated_line = f"({_translate_operand(list_var)}, {_translate_operand(index_var)}, {_translate_operand(value)})"
 
         return translated_line, is_special_flow
 
