@@ -78,12 +78,6 @@ class AnalizadorSemantico:
         self.entorno.salir_ambito()
 
     def visitar_DeclaracionFuncion(self, nodo):
-        if nodo.nombre == 'weak_arithmetic':
-            err_val = f"[Error] No se puede llamar '{nodo.nombre}'"
-            self.errores.append(
-                Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
-                      -1, -1, -1))
-
         if self.entorno.existe_en_actual(nodo.nombre):
             err_val = f"[Error] Función '{nodo.nombre}' ya declarada en este ámbito"
             self.errores.append(

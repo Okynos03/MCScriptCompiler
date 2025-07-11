@@ -10,41 +10,7 @@ class PythonCode:
         self.codigo_intermedio = codigo_intermedio
         self.execution_session = execution_session
         #aquí se va acumulando el script Python completo
-        self.python_code = '''### C MCScript ###
-import asyncio
-import sys
-
-# Variable global para la sesión de ejecución
-_execution_session = None
-
-def set_execution_session(session):
-    global _execution_session
-    _execution_session = session
-
-async def async_input(prompt=""):
-    """Función input asíncrona que se comunica con el frontend"""
-    global _execution_session
-    if _execution_session:
-        return await _execution_session.wait_for_input(prompt)
-    else:
-        # Fallback a input normal si no hay sesión
-        return input(prompt)
-
-async def async_print(message=""):
-    """Función print asíncrona que envía al frontend"""
-    global _execution_session
-    if _execution_session:
-        await _execution_session.send_output(str(message))
-    else:
-        print(message)
-
-def weak_arithmetic(x):
-    try:
-        return float(x)
-    except:
-        return len(x)
-
-'''
+        self.python_code = ""
         self.variables = {}
         self.warnings = []
         self.errors = []
@@ -243,7 +209,19 @@ async def main():
             # — Cadena de elif —
             # Mientras veas GOTO_IF_FALSE, lo traducimos a "elif ..."
             print(ir[j])
-            while j < len(ir) and ir[j].startswith("GOTO_IF_FALSE"):
+            while j < len(ir) and (ir[j].startswith("GOTO_IF_FALSE") or ir[j].startswith("ETIQUETA ELSE")):
+                print("dembo", j)
+                if ir[j].startswith("ETIQUETA ELSE"):
+                    j += 1
+                    if not self._is_if_start(ir, j):
+                        self.python_code += indent + "else:\n"
+                        while j < len(ir) and ir[j] != f"ETIQUETA {label_end}:":
+                            line, _ = self._translate_single_ir_instruction(ir[j], 0)
+                            if line:
+                                self.python_code += indent + "    " + line.strip() + "\n"
+                            j += 1
+                        return j
+
                 print("2", ir[j])
                 # extraer condición y siguiente etiqueta
                 _, rest = ir[j].split(" ", 1)
@@ -251,12 +229,17 @@ async def main():
                 self.python_code += indent + f"elif {cond_i}:\n"
                 j += 1
                 # traducir el bloque de este elif exactamente igual que un if
-                while j < len(ir) and \
-                      not ir[j].startswith("GOTO ") and \
-                      not ir[j].startswith("ETIQUETA"):
+                while j < len(ir):
+                    if ir[j].startswith("GOTO ") or ir[j].startswith("ETIQUETA ELSE") or ir[j].startswith("ETIQUETA ENDIF"):
+                        j += 1
+                        break
                     # detectar estructuras anidadas aquí...
                     if self._is_if_start(ir, j):
-                        j = self._translate_if_block(ir, j, indent + "    "); continue
+                        print("demebeeeeleee")
+                        j = self._translate_if_block(ir, j, indent + "    ")
+                        while ir[j].startswith("ETIQUETA ENDIF"):
+                            j += 1
+                        continue
                     if self._is_for_loop_start(ir, j):
                         j = self._translate_for_loop(ir, j, indent + "    "); continue
                     if self._is_while_loop_start(ir, j):
@@ -265,26 +248,8 @@ async def main():
                     if line:
                         self.python_code += indent + "    " + line.strip() + "\n"
                     j += 1
-                # saltar el GOTO que cierra este elif
-                if j < len(ir) and ir[j].startswith("GOTO ") and \
-                   ir[j].split(" ",1)[1].strip() == next_else:
-                    j += 1
 
-            # — Finalmente, un “else:” puro si al final hay un bloque sin condición —
-            #    Sabemos que el siguiente ENDIF final apunta al cierre
-            if label_end:
-                # si justo llegamos a la ETIQUETA label_end, entonces no hay else
-                print(j, len(ir), ir[j], f"ETIQUETA{label_end}:")
-                if not (j < len(ir) and ir[j] == f"ETIQUETA {label_end}:"):
-                    print("2",j, len(ir), ir[j], f"ETIQUETA{label_end}:")
-                    # emitimos else y traducimos hasta esa etiqueta
-                    self.python_code += indent + "else:\n"
-                    while j < len(ir) and ir[j] != f"ETIQUETA {label_end}:":
-                        line, _ = self._translate_single_ir_instruction(ir[j], 0)
-                        if line:
-                            self.python_code += indent + "    " + line.strip() + "\n"
-                        j += 1
-
+        #print(j, ir[j], "imporrtant")
         return j
 
     def _translate_single_ir_instruction(self, instruccion, indent_level):
