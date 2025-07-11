@@ -11,6 +11,7 @@ import json
 import uuid
 from typing import Dict, Optional
 
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")

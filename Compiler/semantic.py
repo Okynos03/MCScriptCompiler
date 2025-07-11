@@ -206,7 +206,7 @@ class AnalizadorSemantico:
 
     def visitar_SentenciaSi(self, nodo):
         tipo_cond = self.analizar(nodo.condicion)
-        if tipo_cond != 'palanca':
+        if tipo_cond not in ['palanca','item']:
             err_val = f"[Error] Condición del SI debe ser de tipo palanca, se encontró '{tipo_cond}'"
             self.errores.append(
                 Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,
