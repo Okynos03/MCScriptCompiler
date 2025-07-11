@@ -6,6 +6,16 @@ class OptimizadorCodigoIntermedio:
         self.codigo_intermedio = list(codigo_intermedio)
         self.optimizacion_aplicada = False
 
+    def _es_literal(self, s: str) -> bool:
+        """Devuelve True sólo si s es un literal numérico puro (ej. '3' o '2.5')."""
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+
+
+
     def optimizar(self):
         cambios_realizados = True
         while cambios_realizados:
@@ -104,47 +114,42 @@ class OptimizadorCodigoIntermedio:
                                         pass  #
                                 else:
                                     op2_val = op2_str
-
-                            if op1_val is not None and op2_val is not None:
+                            # Sólo plegar si AMBOS operandos son literales
+                            if self._es_literal(op1_str) and self._es_literal(op2_str):
+                                a = float(op1_str) if '.' in op1_str else int(op1_str)
+                                b = float(op2_str) if '.' in op2_str else int(op2_str)
                                 resultado = None
                                 if opcode == "ADD":
-                                    resultado = op1_val + op2_val
+                                    resultado = a + b
                                 elif opcode == "SUB":
-                                    resultado = op1_val - op2_val
+                                    resultado = a - b
                                 elif opcode == "MUL":
-                                    resultado = op1_val * op2_val
-                                elif opcode == "DIV":
-                                    if op2_val != 0:
-                                        resultado = op1_val / op2_val
-                                    else:
-                                        pass
-                                elif opcode == "MOD":
-                                    if op2_val != 0:
-                                        resultado = op1_val % op2_val
-                                    else:
-                                        pass
+                                    resultado = a * b
+                                elif opcode == "DIV" and b != 0:
+                                    resultado = a / b
+                                elif opcode == "MOD" and b != 0:
+                                    resultado = a % b
                                 elif opcode == "POW":
-                                    resultado = op1_val ** op2_val
+                                    resultado = a ** b
                                 elif opcode == "AND":
-                                    resultado = int(bool(op1_val) and bool(op2_val))
+                                    resultado = int(bool(a) and bool(b))
                                 elif opcode == "OR":
-                                    resultado = int(bool(op1_val) or bool(op2_val))
+                                    resultado = int(bool(a) or bool(b))
                                 elif opcode == "EQ":
-                                    resultado = int(op1_val == op2_val)
+                                    resultado = int(a == b)
                                 elif opcode == "GT":
-                                    resultado = int(op1_val > op2_val)
+                                    resultado = int(a > b)
                                 elif opcode == "GTE":
-                                    resultado = int(op1_val >= op2_val)
+                                    resultado = int(a >= b)
                                 elif opcode == "LT":
-                                    resultado = int(op1_val < op2_val)
+                                    resultado = int(a < b)
                                 elif opcode == "LTE":
-                                    resultado = int(op1_val <= op2_val)
-                                elif opcode == "CON" and op1_val[0] == '"' and op2_val[0] == '"':
-                                    resultado = f' "{op1_val[1:-1]}{op2_val[1:-1]}"'
-
+                                    resultado = int(a <= b)
+                                elif opcode == "CON" and op1_str.startswith('"') and op2_str.startswith('"'):
+                                    # Cadena literal
+                                    resultado = f'"{op1_str[1:-1] + op2_str[1:-1]}"'
                                 if resultado is not None:
                                     instrucciones_nuevas.append(f"ASSIGN {destino} = {resultado}")
-                                    valores_conocidos[destino] = resultado
                                     cambios = True
                                     continue
 
@@ -153,12 +158,7 @@ class OptimizadorCodigoIntermedio:
 
                 #gemini me dice que tenia que checar lo de pop no se donde ponerlo, pero es como una asignacion creo hay que revisar
                 #por coo maneje el pop en la instruccion, no lo puse como opcode
-                if opcode in ["ASSIGN", "POP_RETVAL"]:
-                    try:
-                        valor_directo = float(operacion) if '.' in operacion else int(operacion)
-                        valores_conocidos[destino] = valor_directo
-                    except ValueError:
-                        pass
+                
             instrucciones_nuevas.append(instruccion)
 
         self.codigo_intermedio = instrucciones_nuevas

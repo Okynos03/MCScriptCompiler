@@ -6,7 +6,7 @@ from static.series import INT, FLOAT, COFRE
 
 class PythonCode:
     def __init__(self, codigo_intermedio, execution_session=None):
-        self.param_stack = None
+        self.param_stack = []
         self.codigo_intermedio = codigo_intermedio
         self.execution_session = execution_session
         #aquí se va acumulando el script Python completo
@@ -50,17 +50,94 @@ def weak_arithmetic(x):
         self.errors = []
 
     def translate(self):
-        #_execution_session guarda la sesión actual el WebSocket
-        #set_execution_session es el setter para inyectar la sesión _tras_ ejecutar el código
-        #async_input/async_print son wrappers sobre input/print que envían/reciben datos al frontend
-        #weak_arithmetic es el helper para operaciones aritméticas débiles pasa strings → len
+        # 1) Emitir la cabecera (header + async def main())
+        self._emitir_cabecera()
+
+        indent = "    "
+        ir = self.codigo_intermedio
+        i, n = 0, len(ir)
+
+        while i < n:
+            if self._is_for_loop_start(ir, i):
+                i = self._translate_for_loop(ir, i, indent)
+                continue
+            if self._is_while_loop_start(ir, i):
+                i = self._translate_while_loop(ir, i, indent)
+                continue
+            if self._is_if_start(ir, i):
+                i = self._translate_if_block(ir, i, indent)
+                continue
+
+            # Instrucciones atómicas
+            line, _ = self._translate_single_ir_instruction(ir[i], 0)
+            if line:
+                self.python_code += indent + line.strip() + "\n"
+            i += 1
+
+        # 3) Pie de página (si necesitas algo tras main)
+        self.python_code += "### FIN MCScript ###\n"
+
+
+
+    # — Helpers para FOR numerico —
+    def _is_for_loop_start(self, ir, idx):
+        return (
+            ir[idx].startswith("ASSIGN") and
+            idx+1 < len(ir) and ir[idx+1].startswith("ETIQUETA FOR_START") and
+            idx+2 < len(ir) and ir[idx+2].startswith("LT ")
+        )
+
+    def _translate_for_loop(self, ir, i, indent):
+        # Desempaqueta ASSIGN, ETIQUETA FOR_START, LT, ADD, GOTO, ETIQUETA FOR_END
+        _, assign_args = ir[i].split(" ",1)
+        var, start = [s.strip() for s in assign_args.split("=",1)]
+        _, lt_args = ir[i+2].split(" ",1)
+        _, rhs = lt_args.split("=",1)
+        _, end = [s.strip() for s in rhs.split(",",1)]
+
+        # buscamos paso (ADD antes del GOTO)
+        j = i+3
+        while j < len(ir) and not ir[j].startswith("GOTO "):
+            j += 1
+        _, add_args = ir[j-2].split(" ",1)
+        _, ops = add_args.split("=",1)
+        _, step = [s.strip() for s in ops.split(",",1)]
+
+        # emitimos la cabecera del for
+        self.python_code += indent + f"for {var} in range({start}, {end}, {step}):\n"
+        # traducimos el cuerpo
+        k = i + 4
+        lim = j - 2
+        while k < lim:
+            # 1) For anidado
+            if self._is_for_loop_start(ir, k):
+                k = self._translate_for_loop(ir, k, indent + "    ")
+                continue
+            # 2) While anidado
+            if self._is_while_loop_start(ir, k):
+                k = self._translate_while_loop(ir, k, indent + "    ")
+                continue
+            # 3) If anidado
+            if self._is_if_start(ir, k):
+                k = self._translate_if_block(ir, k, indent + "    ")
+                continue
+
+            # 4) Instrucción atómica
+            line, _ = self._translate_single_ir_instruction(ir[k], 0)
+            if line:
+                self.python_code += indent + "    " + line.strip() + "\n"
+            k += 1
+
+        # Finalmente devolvemos la posición tras ETIQUETA FOR_END
+        return j + 2
+
+    def _emitir_cabecera(self):
+        # Aquí pones TODO ese string de la cabecera
         self.python_code = """### C MCScript ###
 import asyncio
 import sys
 
-# Variable global para la sesión de ejecución
 _execution_session = None
-
 def set_execution_session(session):
     global _execution_session
     _execution_session = session
@@ -80,28 +157,135 @@ async def async_print(message=""):
         print(message)
 
 def weak_arithmetic(x):
-    try:
-        return float(x)
-    except:
-        return len(x)
+    try: return float(x)
+    except: return len(x)
 
-"""
-        #firma main() y abrir su bloque
-        self.python_code += "async def main():\n"
-        if not self.codigo_intermedio:
-            # si no hay nada que hacer pone al menos un pass
-            self.python_code += "    pass\n"
-        else:
-            # por cada instrucción IR, traducirla e indentarla dentro de main()
-            for ins in self.codigo_intermedio:
-                code, _ = self._translate_single_ir_instruction(ins, 0)
-                if code:
-                    self.python_code += f"    {code}\n"
-        self.python_code += """
-### FIN MCScript ###
+async def main():
 """
 
+    # — Helpers para WHILE genérico —
+    def _is_while_loop_start(self, ir, idx):
+        return ir[idx].startswith("ETIQUETA WHILE_START")
 
+    def _translate_while_loop(self, ir, i, indent):
+        # etiqueta de inicio ya emitida en IR
+        cond_line, _ = self._translate_single_ir_instruction(ir[i+1], 0)
+        _, cond_expr = cond_line.split("=",1)
+        cond = cond_expr.strip()
+
+        # encontramos ETIQUETA WHILE_END
+        end_idx = next(j for j in range(i+2, len(ir))
+                       if ir[j].startswith("ETIQUETA") and "WHILE_END" in ir[j])
+
+        self.python_code += indent + f"while {cond}:\n"
+        for k in range(i+2, end_idx):
+            body, _ = self._translate_single_ir_instruction(ir[k], 0)
+            if body:
+                self.python_code += indent*2 + body.strip() + "\n"
+
+        return end_idx + 1
+
+    # — Detectar un “if” que empieza con GOTO_IF_FALSE —
+    def _is_if_start(self, ir, idx):
+        return ir[idx].split(" ", 1)[0] == "GOTO_IF_FALSE"
+
+    def _translate_if_block(self, ir, i, indent):
+        """
+        Traduce desde GOTO_IF_FALSE cond, label_else
+        hasta ETIQUETA ENDIF… saltando GOTO finales,
+        y emite un if/else en Python con recursión para bloques anidados.
+        Devuelve el nuevo índice tras haber consumido TODO el if/else.
+        """
+        # --- 1) extraer cond y label_else
+        parts = ir[i].split(" ", 1)[1]
+        cond_str, label_else = [s.strip() for s in parts.split(",", 1)]
+        # traducimos operando si fuera literal
+        cond_py = cond_str  # en tu caso MC_pr o literal "True"/"False"
+        self.python_code += indent + f"if {cond_py}:\n"
+
+        # --- 2) cuerpo THEN: desde i+1 hasta GOTO <label_end> o ETIQUETA <label_else> ---
+        j = i + 1
+        label_end = None
+        while j < len(ir):
+            instr = ir[j]
+            # si es salto incondicional dentro del then, guarda el label_end y rompe
+            if instr.startswith("GOTO "):
+                label_end = instr.split(" ",1)[1].strip()
+                j += 1
+                break
+            # si alcanzamos la etiqueta de else, terminamos then
+            if instr.startswith("ETIQUETA") and instr.endswith(f"{label_else}:"):
+                break
+
+            # chequea anidamiento de estructuras
+            if self._is_if_start(ir, j):
+                j = self._translate_if_block(ir, j, indent + "    ")
+                continue
+            if self._is_for_loop_start(ir, j):
+                j = self._translate_for_loop(ir, j, indent + "    ")
+                continue
+            if self._is_while_loop_start(ir, j):
+                j = self._translate_while_loop(ir, j, indent + "    ")
+                continue
+
+            # instrucción atómica
+            line, _ = self._translate_single_ir_instruction(instr, 0)
+            if line:
+                self.python_code += indent + "    " + line.strip() + "\n"
+            j += 1
+
+        print(label_else, ir[j], "dembele")
+        # --- 3) ELSE? emitimos “else:” si existe etiqueta de else ---
+        # si la siguiente instrucción es ETIQUETA <label_else> entonces hay else
+        if label_else.startswith("ELSE") and \
+           j < len(ir) and ir[j] == f"ETIQUETA {label_else}:":
+            j += 1
+            # — Cadena de elif —
+            # Mientras veas GOTO_IF_FALSE, lo traducimos a "elif ..."
+            print(ir[j])
+            while j < len(ir) and ir[j].startswith("GOTO_IF_FALSE"):
+                print("2", ir[j])
+                # extraer condición y siguiente etiqueta
+                _, rest = ir[j].split(" ", 1)
+                cond_i, next_else = [s.strip() for s in rest.split(",", 1)]
+                self.python_code += indent + f"elif {cond_i}:\n"
+                j += 1
+                # traducir el bloque de este elif exactamente igual que un if
+                while j < len(ir) and \
+                      not ir[j].startswith("GOTO ") and \
+                      not ir[j].startswith("ETIQUETA"):
+                    # detectar estructuras anidadas aquí...
+                    if self._is_if_start(ir, j):
+                        j = self._translate_if_block(ir, j, indent + "    "); continue
+                    if self._is_for_loop_start(ir, j):
+                        j = self._translate_for_loop(ir, j, indent + "    "); continue
+                    if self._is_while_loop_start(ir, j):
+                        j = self._translate_while_loop(ir, j, indent + "    "); continue
+                    line, _ = self._translate_single_ir_instruction(ir[j], 0)
+                    if line:
+                        self.python_code += indent + "    " + line.strip() + "\n"
+                    j += 1
+                # saltar el GOTO que cierra este elif
+                if j < len(ir) and ir[j].startswith("GOTO ") and \
+                   ir[j].split(" ",1)[1].strip() == next_else:
+                    j += 1
+
+            # — Finalmente, un “else:” puro si al final hay un bloque sin condición —
+            #    Sabemos que el siguiente ENDIF final apunta al cierre
+            if label_end:
+                # si justo llegamos a la ETIQUETA label_end, entonces no hay else
+                print(j, len(ir), ir[j], f"ETIQUETA{label_end}:")
+                if not (j < len(ir) and ir[j] == f"ETIQUETA {label_end}:"):
+                    print("2",j, len(ir), ir[j], f"ETIQUETA{label_end}:")
+                    # emitimos else y traducimos hasta esa etiqueta
+                    self.python_code += indent + "else:\n"
+                    while j < len(ir) and ir[j] != f"ETIQUETA {label_end}:":
+                        line, _ = self._translate_single_ir_instruction(ir[j], 0)
+                        if line:
+                            self.python_code += indent + "    " + line.strip() + "\n"
+                        j += 1
+
+        return j
 
     def _translate_single_ir_instruction(self, instruccion, indent_level):
         parts = instruccion.split(" ", 1)
@@ -188,12 +372,15 @@ def weak_arithmetic(x):
             temp, message = args.split(', ')
             translated_line = f"{temp} = await async_input({message})"
         elif opcode.startswith("ETIQUETA"):
-            return f"{args}:"
+            return None, False   # no emitimos nada aquí
+
+        elif opcode == "GOTO_IF_FALSE" or opcode == "GOTO":
+            return None, False
+
         elif opcode == "GOTO":
-            return "continue"
-        elif opcode == "GOTO_IF_FALSE":
-            cond, label = [s.strip() for s in args.split(",")]
-            return f"if {_translate_operand(cond)}:"
+            # Si quieres ser más estricto, solo usa continue cuando sea salto a inicio del ciclo
+            return "continue", False
+
         elif opcode == "CALL":
             if '=' in args:
                 dest, func_name = [s.strip() for s in args.split("=")]
