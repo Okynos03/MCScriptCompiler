@@ -15,6 +15,29 @@ class PythonCode:
         self.warnings = []
         self.errors = []
 
+    def _translate_function_block(self, ir, i, indent):
+        func_name_ir = ir[i].split(" ")[1].rstrip(":")  # "FUNC_MC_p"
+
+        j = i + 1
+        params = []
+        while ir[j].startswith("PARAM_DECL"):
+            param_name = ir[j].split(" ", 1)[1]
+            params.append(param_name)
+            j += 1
+
+        params_str = ", ".join(params)
+        self.python_code += f"{indent}async def {func_name_ir}({params_str}):\n"
+
+        func_indent = indent + "    "
+        i = j
+        while not ir[i].startswith("FIN_FUNC"):
+            line, _ = self._translate_single_ir_instruction(ir[i], 0)
+            if line:
+                self.python_code += func_indent + line.strip() + "\n"
+            i += 1
+
+        return i + 1
+
     def translate(self):
         # 1) Emitir la cabecera (header + async def main())
         self._emitir_cabecera()
@@ -27,20 +50,25 @@ class PythonCode:
             if self._is_for_loop_start(ir, i):
                 i = self._translate_for_loop(ir, i, indent)
                 continue
+
             if self._is_while_loop_start(ir, i):
                 i = self._translate_while_loop(ir, i, indent)
                 continue
+
             if self._is_if_start(ir, i):
                 i = self._translate_if_block(ir, i, indent)
                 continue
 
-            # Instrucciones atómicas
+            if ir[i].startswith("ETIQUETA FUNC_"):
+                i = self._translate_function_block(ir, i, indent)
+                continue
+
             line, _ = self._translate_single_ir_instruction(ir[i], 0)
             if line:
                 self.python_code += indent + line.strip() + "\n"
+
             i += 1
 
-        # 3) Pie de página (si necesitas algo tras main)
         self.python_code += "### FIN MCScript ###\n"
 
 
@@ -431,19 +459,27 @@ async def main():
             return "continue", False
 
         elif opcode == "CALL":
-            if '=' in args:
-                dest, func_name = [s.strip() for s in args.split("=")]
-                params = ", ".join(self.param_stack)
-                self.param_stack.clear()
-                return f"{dest} = {func_name}({params})"
+            # Asume el formato: "nombre_func, var_retorno"
+            parts = [s.strip() for s in args.split(",")]
+            func_name = parts[0]
+            dest = parts[1] if len(parts) > 1 else None
+
+            params = ", ".join(self.param_stack)
+            self.param_stack.clear()
+
+            call_str = f"await {func_name}({params})"
+
+            if dest:
+                # Si hay variable de retorno, asigna el resultado
+                translated_line = f"{dest} = {call_str}"
             else:
-                func_name = args.strip()
-                params = ", ".join(self.param_stack)
-                self.param_stack.clear()
-                return f"{func_name}({params})"
+                # Si no, solo llama a la función
+                translated_line = call_str
+
+            return translated_line, True
         elif opcode == "PUSH_PARAM":
             self.param_stack.append(_translate_operand(args))
-            return None
+            return None, False
         elif opcode == "POP_RETVAL":
             return None, is_special_flow
             #call ya asigna el valor de retorno pero checalo jesus
@@ -452,6 +488,7 @@ async def main():
         elif opcode == "PARAM_DECL":
             return None, is_special_flow
         elif opcode == "FIN_FUNC":
+            indent_level -= 1
             return None, is_special_flow
         elif opcode == "GET_LIST_ITEM":
             dest, ops = [s.strip() for s in args.split("=")]
@@ -461,6 +498,13 @@ async def main():
             list_var, ops = [s.strip() for s in args.split(",", 1)]
             index_var, value = [s.strip() for s in ops.split(",", 1)]
             translated_line = f"{_translate_operand(list_var)}[{_translate_operand(index_var)}] = {_translate_operand(value)}"
+
+        elif opcode == "PORTAL":
+            func_name = args.split("(", 1)[0].strip()
+            params_part = args.split("(", 1)[1].rstrip(")")
+            params = [p.strip() for p in params_part.split(",")] if params_part else []
+            translated_line = f"async def {func_name}({', '.join(params)}):"
+            indent_level += 1
 
         return translated_line, is_special_flow
 
