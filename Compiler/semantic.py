@@ -344,7 +344,7 @@ class AnalizadorSemantico:
             """
             args = [nodo.mensaje]
             tipo = self.analizar(args[0])
-            if args and tipo not in ['libro', 'hoja', 'item', 'bloque', 'losa', 'palanca']:
+            if args and tipo not in ['libro', 'hoja', 'item', 'bloque', 'losa', 'palanca', 'cofre']:
                 err_val = "[Error] CHAT y CARTEL espera una expresión de tipo libro, bloque, losa, item, palanca u hoja"
                 self.errores.append(
                     Error("SEMANTICAL", err_val, self.tokens[nodo.index].row,

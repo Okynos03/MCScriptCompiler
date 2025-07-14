@@ -301,11 +301,11 @@ class GeneradorIntermedio:
         return temp_resultado
 
     def generar_ListaFactores(self, nodo):
-        resultados_factores_ir = []
+        resultados_factores_ir = "["
         for factor_nodo in nodo.factores:
             resultado_factor = self.generar(factor_nodo)
-            resultados_factores_ir.append(resultado_factor)
-        return resultados_factores_ir #la mando asi nada mas pq jajaja traducimos la lista a una de python y ya ajajaj
+            resultados_factores_ir += str(resultado_factor) + ", "
+        return resultados_factores_ir[:-2] + "]" #la mando asi nada mas pq jajaja traducimos la lista a una de python y ya ajajaj
 
     def obtener_nombre_tipo(self, token_type):
         tipos = {
