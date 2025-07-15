@@ -107,83 +107,106 @@ async def main():
 """
 
     def _is_for_loop_start(self, ir, idx):
-        # La asignación inicial + etiqueta + UNA comparación (EQ/LT/LTE/GT/GTE) indican un for
-        return (
-            ir[idx].startswith("ASSIGN") and
-            idx+1 < len(ir) and ir[idx+1].startswith("ETIQUETA FOR_START") and
-            idx+2 < len(ir) and
-            ir[idx+2].split()[0] in ("EQ","LT","LTE","GT","GTE")
-        )
+            # Verifico ASSIGN inicial y la etiqueta FOR_START contigua
+            if not (ir[idx].startswith("ASSIGN") and
+                    idx+1 < len(ir) and ir[idx+1].startswith("ETIQUETA FOR_START")):
+                return False
+
+            # Busco un GOTO_IF_FALSE antes de la siguiente etiqueta
+            p = idx + 2
+            while p < len(ir) and not ir[p].startswith("ETIQUETA"):
+                if ir[p].startswith("GOTO_IF_FALSE"):
+                    return True     # hallado ⇒ es un for
+                p += 1
+            return False
+
 
     def _translate_for_loop(self, ir, i, indent):
-        # 1) Desempaquetar la asignación inicial (var = start)
-        _, assign_args = ir[i].split(" ", 1)
-        var, start = [s.strip() for s in assign_args.split("=", 1)]
+            #contador y valor inicial
+            _, assign_args = ir[i].split(" ", 1)
+            var, start = [s.strip() for s in assign_args.split("=", 1)]
 
-        # 2) Extraer la etiqueta de inicio (FOR_STARTx:)
-        _, label = ir[i + 1].split(" ", 1)
-        start_label = label.rstrip(":")
+            #etiqueta FOR_STARTN
+            _, label = ir[i+1].split(" ", 1)
+            start_label = label.rstrip(":")
 
-        # 3) Encontrar el salto de retorno del for (GOTO FOR_STARTx)
-        j_back = next(
-            idx for idx in range(i + 2, len(ir))
-            if ir[idx].startswith("GOTO ")
-            and ir[idx].split(" ", 1)[1].strip() == start_label
-        )
+            #localizo el GOTO_IF_FALSE que rompe el bucle
+            p = i + 2
+            while not ir[p].startswith("GOTO_IF_FALSE"):
+                p += 1
+            goto_idx  = p
+            cond_line = ir[p-1]
 
-        # 4) Determinar el paso; puede venir en un ADD o un SUB justo antes de j_back
-        step_instr = ir[j_back - 2]
-        opcode_step, args_step = step_instr.split(" ", 1)  # p.ej. "ADD t1 = x, 1" o "SUB t1 = x, 1"
-        _, ops = args_step.split("=", 1)
-        op1, op2 = [s.strip() for s in ops.split(",", 1)]
-        raw_step = op2  # p.ej. "1"
-        if opcode_step == "ADD":
-            step = raw_step
-        elif opcode_step == "SUB":
-            # decremento → paso negativo
-            step = f"-{raw_step}"
-        else:
-            step = raw_step  # caso genérico
+            #se recupera la comparación que se hace y posible aritmética para el límite
+            BIN_OPS = {"ADD": "+", "SUB": "-", "MUL": "*", "DIV": "/", "MOD": "%"}
+            scan, arith_line = i + 2, None
+            while ir[scan].split()[0] not in {"EQ","LT","LTE","GT","GTE"}:
+                op = ir[scan].split()[0]
+                if op in BIN_OPS:
+                    arith_line = ir[scan]
+                scan += 1
+            cmp_idx = scan
+            opcode_cmp, cmp_args = ir[cmp_idx].split(" ", 1)
+            _, rhs     = cmp_args.split("=", 1)
+            _, end_raw = rhs.split(",", 1)
+            end_raw    = end_raw.strip()
 
-        # 5) Extraer la comparación que fija el límite (en ir[i+2])
-        opcode_cmp, comp_args = ir[i + 2].split(" ", 1)  # p.ej. "LT t0 = x, 5" o "GT t0 = x, 0"
-        _, rhs = comp_args.split("=", 1)
-        parts = rhs.split()  # ["x", ">", "0"]
-        end = parts[-1].strip()
+            #aquí reconstruye end_expr
+            if arith_line:
+                op_code, expr = arith_line.split(" ", 1)
+                dest, ops     = [s.strip() for s in expr.split("=", 1)]
+                a, b          = [s.strip() for s in ops.split(",")]
+                end_expr = f"{a} {BIN_OPS[op_code]} {b}" if dest == end_raw else end_raw
+            else:
+                end_expr = end_raw
 
-        # 6) Calcular el end_expr según el comparador
-        if opcode_cmp == "LT":
-            end_expr = end
-        elif opcode_cmp == "LTE":
-            end_expr = f"{end} + 1"
-        elif opcode_cmp == "GT":
-            end_expr = end
-        elif opcode_cmp == "GTE":
-            end_expr = f"{end} - 1"
-        else:
-            end_expr = end  # otros comparadores
+            #ajusta inclusividad para range()
+            if opcode_cmp == "LTE":
+                end_expr = f"({end_expr}) + 1"
+            elif opcode_cmp == "GTE":
+                end_expr = f"({end_expr}) - 1"
 
-        # 7) Emitir el for en Python
-        self.python_code += indent + f"for {var} in range({start}, {end_expr}, {step}):\n"
+            #se detecta cada instrucción de paso (ADD/SUB contador, 1)
+            j_back = next(idx for idx in range(cmp_idx+1, len(ir))
+                        if ir[idx].startswith("GOTO ") and
+                            ir[idx].split()[1] == start_label)
+            step_instr       = ir[j_back-2]
+            op_step, s_args  = step_instr.split(" ", 1)
+            _, ops_step      = s_args.split("=", 1)
+            _, step_val      = [s.strip() for s in ops_step.split(",", 1)]
+            step = step_val if op_step == "ADD" else f"-{step_val}"
 
-        # 8) Traducir el cuerpo (entre i+4 y j_back-2)
-        k = i + 4
-        body_end = j_back - 2
-        while k < body_end:
-            if self._is_for_loop_start(ir, k):
-                k = self._translate_for_loop(ir, k, indent + "    "); continue
-            if self._is_while_loop_start(ir, k):
-                k = self._translate_while_loop(ir, k, indent + "    "); continue
-            if self._is_if_start(ir, k):
-                k = self._translate_if_block(ir, k, indent + "    "); continue
+            #encabezado del for
+            self.python_code += indent + f"for {var} in range({start}, {end_expr}, {step}):\n"
 
-            line, _ = self._translate_single_ir_instruction(ir[k], 0)
-            if line:
-                self.python_code += indent + "    " + line.strip() + "\n"
-            k += 1
+            #para cuando se usa condiciones complejas 
+            for q in range(i+2, goto_idx):
+                line, _ = self._translate_single_ir_instruction(ir[q], 0)
+                if line:
+                    self.python_code += indent + "    " + line.strip() + "\n"
 
-        # 9) Saltar al final del for (después de ETIQUETA FOR_ENDx)
-        return j_back + 2
+            #break si la condición final es falsa
+            cond_var = cond_line.split(" ",1)[1].split("=",1)[0].strip()
+            self.python_code += indent + f"    if not {cond_var}: break\n"
+
+            #traduce el cuerpo real del for
+            body_start, body_end = goto_idx + 1, j_back - 2
+            k = body_start
+            STEP = "    "
+            while k < body_end:
+                if self._is_for_loop_start(ir, k):
+                    k = self._translate_for_loop(ir, k, indent + STEP); continue
+                if self._is_while_loop_start(ir, k):
+                    k = self._translate_while_loop(ir, k, indent + STEP); continue
+                if self._is_if_start(ir, k):
+                    k = self._translate_if_block(ir, k, indent + STEP); continue
+
+                line, _ = self._translate_single_ir_instruction(ir[k], 0)
+                if line:
+                    self.python_code += indent + STEP + line.strip() + "\n"
+                k += 1
+
+            return j_back + 2
 
     # — Helpers para WHILE genérico —
     def _is_while_loop_start(self, ir, idx):

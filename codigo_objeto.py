@@ -28,65 +28,30 @@ def weak_arithmetic(x):
     except: return len(x)
 
 async def main():
-    await async_print("------CALCULADORA MCS----------")
-    MC_flag = 1
-    while MC_flag:
-        t0 = str("MENÚ:\n") + str("1. ingresa + para sumar\n")
-        t1 = str(t0) + str("2. ingresa - para restar\n")
-        t2 = str(t1) + str("3. ingresa * para multiplicar\n")
-        t3 = str(t2) + str("4. ingresa / para dividir\n")
-        t4 = str(t3) + str("5. ingresa s para terminar el programa")
-        await async_print(t4)
-        t5 = await async_input("ingresa la operación a realizar")
-        MC_ingreso = t5
-        t6 = MC_ingreso == "+"
-        if t6:
-            t7 = await async_input("ingresa operando 1:")
-            MC_op1 = t7
-            t8 = await async_input("ingresa operando 2:")
-            MC_op2 = t8
-            t9 = weak_arithmetic(MC_op1) + weak_arithmetic(MC_op2)
-            MC_resultado = t9
-            t10 = str("resultado: ") + str(MC_resultado)
-            await async_print(t10)
-        else:
-            t11 = MC_ingreso == "-"
-            if t11:
-                t12 = await async_input("ingresa operando 1:")
-                MC_op1 = t12
-                t13 = await async_input("ingresa operando 2:")
-                MC_op2 = t13
-                t14 = weak_arithmetic(MC_op1) - weak_arithmetic(MC_op2)
-                MC_resultado = t14
-                t15 = str("resultado: ") + str(MC_resultado)
-                await async_print(t15)
-            else:
-                t16 = MC_ingreso == "*"
-                if t16:
-                    t17 = await async_input("ingresa operando 1:")
-                    MC_op1 = t17
-                    t18 = await async_input("ingresa operando 2:")
-                    MC_op2 = t18
-                    t19 = weak_arithmetic(MC_op1) * weak_arithmetic(MC_op2)
-                    MC_resultado = t19
-                    t20 = str("resultado: ") + str(MC_resultado)
-                    await async_print(t20)
-                else:
-                    t21 = MC_ingreso == "/"
-                    if t21:
-                        t22 = await async_input("ingresa operando 1:")
-                        MC_op1 = t22
-                        t23 = await async_input("ingresa operando 2:")
-                        MC_op2 = t23
-                        t24 = weak_arithmetic(MC_op1) / weak_arithmetic(MC_op2)
-                        MC_resultado = t24
-                        t25 = str("resultado: ") + str(MC_resultado)
-                        await async_print(t25)
-                    else:
-                        t26 = MC_ingreso == "s"
-                        if t26:
-                            await async_print("Adios...")
-                            MC_flag = 0
-                        else:
-                            await async_print("Por favor ingresa una opción valida")
+    MC_run = 1
+    MC_arr = [5, 2, 4]
+    for MC_i in range(0, 3, 1):
+        t0 = MC_i < 3
+        if not t0: break
+        for MC_j in range(0, 3 - MC_i, 1):
+            t1 = weak_arithmetic(3) - weak_arithmetic(MC_i)
+            t2 = MC_j < t1
+            if not t2: break
+            t3 = MC_arr[MC_j]
+            t4 = weak_arithmetic(MC_j) + weak_arithmetic(1)
+            t5 = MC_arr[t4]
+            t6 = t3 > t5
+            if t6:
+                t7 = MC_arr[MC_j]
+                MC_tmp = t7
+                t8 = weak_arithmetic(MC_j) + weak_arithmetic(1)
+                t9 = MC_arr[t8]
+                MC_arr[MC_j] = t9
+                t10 = weak_arithmetic(MC_j) + weak_arithmetic(1)
+                MC_arr[t10] = MC_tmp
+    for MC_k in range(0, 3, 1):
+        t13 = MC_k < 3
+        if not t13: break
+        t14 = MC_arr[MC_k]
+        await async_print(t14)
 ### FIN MCScript ###
