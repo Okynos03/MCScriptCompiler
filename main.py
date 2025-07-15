@@ -134,8 +134,12 @@ async def analyze(request: Request, code: str = Form(...)):
             "code": optimized,
             "status": "ready"
         }
+
+        #THIS IS SOME STUPID ASS PIECE OF CODE, ITS DUPLICATED LOL
+        translator = PythonCode(optimized)
+        translator.translate()
         
-        output_console = f"Código listo para ejecución. Session ID: {session_id}"
+        output_console = f"Código listo para ejecución. Session ID: {session_id}\n" + translator.python_code
 
     #Preparar datos para resaltado en tiempo real
     simple_tokens = [
