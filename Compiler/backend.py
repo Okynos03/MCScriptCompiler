@@ -99,7 +99,12 @@ async def async_print(message=""):
         else:
             print(line)
 def weak_arithmetic(x):
-    try: return float(x)
+    try: 
+        num_val = float(x)
+        if num_val == int(num_val):
+            return int(num_val)
+        else:
+            return num_val
     except: return len(x)
 
 async def main():
