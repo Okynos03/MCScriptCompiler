@@ -211,6 +211,14 @@ morir;</pre>
 }
 morir;</pre>
           </div>
+
+          <li><strong>cofre</strong>: Este tipo permite declarar una lista de items, es decir, acepta cualquier tipo de dato (numérico, cadena de texto, otros cofres, etc.)</li>
+            <div class="code-example">
+            <pre>spawnear {
+      cofre cf = ["Holaaa", 65, encendido, [5,3,"adios"]];
+}
+morir;</pre>
+          </div>
           </ul>
         </div>
         
@@ -358,6 +366,25 @@ morir;</pre>
           </ul>
         </div>
         
+        <div class="doc-section">
+          <h4>📝 Funciones</h4>
+          <ul>
+            <li><strong>portal</strong>: Esta sentencia se usa para declarar una función dentro de MCScript, es decir, permite declarar acciones que puede que se usen muchas veces.</li>
+            <li><strong>tp</strong>: Esta sentencia es para retornar o regresar algún valor en específico dentro de un portal</li>
+          </ul>
+          <div class="code-example">
+            <pre>spawnear {
+      portal suma(a, b){
+          tp craftear(a, b);
+      }
+
+      chat(suma(5,7));
+      chat(suma(10, 56));
+}
+morir;</pre>
+          </div>
+        </div>
+
       </div>
       
       <div class="modal-footer">
