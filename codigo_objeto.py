@@ -29,29 +29,12 @@ def weak_arithmetic(x):
 
 async def main():
     MC_run = 1
-    MC_arr = [5, 2, 4]
-    for MC_i in range(0, 3, 1):
-        t0 = MC_i < 3
-        if not t0: break
-        for MC_j in range(0, 3 - MC_i, 1):
-            t1 = weak_arithmetic(3) - weak_arithmetic(MC_i)
-            t2 = MC_j < t1
-            if not t2: break
-            t3 = MC_arr[MC_j]
-            t4 = weak_arithmetic(MC_j) + weak_arithmetic(1)
-            t5 = MC_arr[t4]
-            t6 = t3 > t5
-            if t6:
-                t7 = MC_arr[MC_j]
-                MC_tmp = t7
-                t8 = weak_arithmetic(MC_j) + weak_arithmetic(1)
-                t9 = MC_arr[t8]
-                MC_arr[MC_j] = t9
-                t10 = weak_arithmetic(MC_j) + weak_arithmetic(1)
-                MC_arr[t10] = MC_tmp
-    for MC_k in range(0, 3, 1):
-        t13 = MC_k < 3
-        if not t13: break
-        t14 = MC_arr[MC_k]
-        await async_print(t14)
+    MC_b = 0
+    t0 = MC_b == 0
+    if t0:
+        async def FUNC_MC_p1():
+            await async_print("1")
+    while MC_b < 10:
+        t2 = weak_arithmetic(MC_b) + weak_arithmetic(1)
+        MC_b = t2
 ### FIN MCScript ###
