@@ -32,6 +32,19 @@ class PythonCode:
         func_indent = indent + "    "
         i = j
         while not ir[i].startswith("FIN_FUNC"):
+            if self._is_for_loop_start(ir, i):
+                i = self._translate_for_loop(ir, i, indent + "    ")
+                continue
+            if self._is_while_loop_start(ir, i):
+                i = self._translate_while_loop(ir, i, indent + "    ")
+                continue
+            if self._is_if_start(ir, i):
+                i = self._translate_if_block(ir, i, indent + "    ")
+                continue
+            if ir[i].startswith("ETIQUETA FUNC_"):
+                i = self._translate_function_block(ir, i, indent + "    ")
+                continue
+
             line, _ = self._translate_single_ir_instruction(ir[i], 0)
             if line:
                 self.python_code += func_indent + line.strip() + "\n"
@@ -200,6 +213,8 @@ async def main():
                     k = self._translate_while_loop(ir, k, indent + STEP); continue
                 if self._is_if_start(ir, k):
                     k = self._translate_if_block(ir, k, indent + STEP); continue
+                if ir[k].startswith("ETIQUETA FUNC_"):
+                    k = self._translate_function_block(ir, k, indent + "    "); continue
 
                 line, _ = self._translate_single_ir_instruction(ir[k], 0)
                 if line:
@@ -269,6 +284,9 @@ async def main():
             if self._is_if_start(ir, k):
                 k = self._translate_if_block(ir, k, indent + "    ")
                 continue
+            if ir[k].startswith("ETIQUETA FUNC_"):
+                k = self._translate_function_block(ir, k, indent + "    ")
+                continue
 
             body_line, _ = self._translate_single_ir_instruction(ir[k], 0)
             if body_line:
@@ -331,6 +349,9 @@ async def main():
                 continue
             if self._is_while_loop_start(ir, j):
                 j = self._translate_while_loop(ir, j, indent + "    ")
+                continue
+            if ir[j].startswith("ETIQUETA FUNC_"):
+                j = self._translate_function_block(ir, j, indent + "    ")
                 continue
 
             # instrucción atómica
