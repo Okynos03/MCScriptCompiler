@@ -453,7 +453,7 @@ async def main():
         elif opcode == "PRINT":
             translated_line = f"await async_print({_translate_operand(args)})"
         elif opcode == "INPUT":
-            temp, message = args.split(', ')
+            temp, message = args.split(', ', 1)
             translated_line = f"{temp} = await async_input({message})"
         elif opcode.startswith("ETIQUETA"):
             return None, False   # no emitimos nada aquí
