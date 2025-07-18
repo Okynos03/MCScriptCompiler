@@ -176,10 +176,41 @@ morir;</pre>
           <h4>🔧 Tipos de Datos</h4>
           <ul>
             <li><strong>bloque</strong>: Este define todos los números enteros (ej: 42, -10)</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque variable = 5;
+}
+morir;</pre>
+          </div>
             <li><strong>losa</strong>: Con este podemos poner números decimales (ej: 3.14, -2.5)</li>
+            <div class="code-example">
+            <pre>spawnear {
+      losa variable = 2.3;
+}
+morir;</pre>
+          </div>
             <li><strong>hoja</strong>: Este tipo de dato solo acepta caracteres individuales (ej: "a", "b")</li>
+            <div class="code-example">
+            <pre>spawnear {
+      hoja simbolo = "a";
+}
+morir;</pre>
+          </div>
             <li><strong>libro</strong>: Este otro acepta cadenas de texto completas (ej: "hola", "adios)</li>
+            <div class="code-example">
+            <pre>spawnear {
+      libro cadena_texto = "Hola MCScript";
+}
+morir;</pre>
+          </div>
             <li><strong>palanca</strong>: Este es el booleano, es decir, sólo acepta valores sí o no que son "encendido" y "apagado" respectivamente</li>
+            <div class="code-example">
+            <pre>spawnear {
+      palanca pl = encendido;
+      palanca pl = apagado;
+}
+morir;</pre>
+          </div>
           </ul>
         </div>
         
@@ -187,16 +218,95 @@ morir;</pre>
           <h4>🎮 Palabras Clave</h4>
           <ul>
             <li><strong>spawnear</strong>: Esta palabra define el inicio del bloque de código</li>
+            <div class="code-example">
+            <pre>spawnear {
+              //spawnear indica el inicio del bloque y necesita de {} en donde debe ir el código que deseas colocar
+}</pre>
+          </div>
             <li><strong>morir</strong>: Como su nombre indica, es la muerte o el fin del bloque de código</li>
+            <div class="code-example">
+            <pre>morir;</pre>
+          </div>
             <li><strong>craftear</strong>: Esta palabra recibe dos parametros que se sumaran</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      craftear(a, b); //suma las variables a y b
+}
+morir;</pre>
+          </div>
             <li><strong>romper</strong>: Esta palabra recibe dos parametros que se restaran</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      romper(a, b); //resta las variables a y b
+}
+morir;</pre>
+          </div>
             <li><strong>apilar</strong>: Esta palabra recibe dos parametros que se multiplicaran</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      apilar(a, b); //multiplica las variables a y b
+}
+morir;</pre>
+          </div>
             <li><strong>repartir</strong>: Esta palabra recibe dos parametros que se dividiran</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      repartir(a, b); //divide las variables a y b
+}
+morir;</pre>
+          </div>
             <li><strong>sobrar</strong>: Esta palabra recibe dos parametros enteros que se dividiran y devolvera el sobrante de la división</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      sobrar(a, b); //divide las variables a - b y devuelve como resultado el sobrante de la división
+}
+morir;</pre>
+          </div>
             <li><strong>encantar</strong>: Esta palabra recibe dos parametros que el primero se elevara a la potencia que indique el segundo</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      encantar(a, b); //eleva a la variable "a" a la potencia "b", es decir, eleva 5^6
+}
+morir;</pre>
+          </div>
             <li><strong>chat</strong>: Esta palabra se usa para imprimir un mensaje en la consola</li>
-            <li><strong>letrero</strong>: Esta palabra se usa para leer un valor de la consola, con un mensaje</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = 5;
+      bloque b = 6;
+      bloque resultado = craftear(a, b);
+      chat(resultado);//Imprime en pantalla el resultado de la suma de a y b
+}
+morir;</pre>
+          </div>
+            <li><strong>cartel</strong>: Esta palabra se usa para leer un valor de la consola, con un mensaje</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque a = cartel("ingresa el valor de a");//asigna a "a" el valor ingresado desde consola
+      chat(a);
+}
+morir;</pre>
+          </div>
             <li><strong>antorchaR</strong>: Esta palabra se usa para invertir un valor booleano</li>
+            <div class="code-example">
+            <pre>spawnear {
+      palanca pl = encendido;
+      pl = antorchaR(pl);//invierte el valor de pl a apagado o encendido dependiendo el valor inicial
+}
+morir;</pre>
+          </div>
           </ul>
         </div>
 
@@ -204,7 +314,26 @@ morir;</pre>
           <h4>🎮 Bucles</h4>
           <ul>
             <li><strong>para</strong>: Sirve para repetir algo varias veces definidas, uno por uno, como si estuvieras pasando lista</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque x;
+      para(x=0; x<5; x=x+1;){
+        chat(x); //imprime el valor de x hasta llegar a 4
+     }
+}
+morir;</pre>
+          </div>
             <li><strong>mientras</strong>: Sirve para repetir algo varias veces indefinidas mientras la condición se cumpla</li>
+            <div class="code-example">
+            <pre>spawnear {
+      bloque x=0;
+      mientras(x<5){
+        chat(x); //imprime el valor de x hasta llegar a 4
+        x=x+1;
+     }
+}
+morir;</pre>
+          </div>
           </ul>
         </div>
 
@@ -213,21 +342,22 @@ morir;</pre>
           <ul>
             <li><strong>Si</strong>: Esta sentencia abre un bloque que código que se ejecutara siempre y cuando la condición se cumpla.</li>
             <li><strong>Sino</strong>: Esta sentencia abre un bloque que código que se ejecutara cuando la condición del Si no se cumpla, solo puede estar depues del bloque del Si</li>
-          </ul>
-        </div>
-        
-        <div class="doc-section">
-          <h4>💡 Ejemplo Completo</h4>
-          <div class="code-example">
+            <div class="code-example">
             <pre>spawnear {
-      chat("¿Hola cómo estás?");
-      libro respuesta = cartel("ingresa tu respuesta:");
-      //imprimimos respuesta
-      chat(respuesta);
+      bloque a = 5;
+      si(a==5){
+        chat("El numero ingresado es 5");
+      }sino si(a==6){
+        chat("El número ingresado es 6");
+      }sino{
+        chat("El número que ingresaste no es ni 5 ni 6");
+      }
 }
 morir;</pre>
           </div>
+          </ul>
         </div>
+        
       </div>
       
       <div class="modal-footer">

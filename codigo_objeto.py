@@ -24,17 +24,59 @@ async def async_print(message=""):
         else:
             print(line)
 def weak_arithmetic(x):
-    try: return float(x)
+    try: 
+        num_val = float(x)
+        if num_val == int(num_val):
+            return int(num_val)
+        else:
+            return num_val
     except: return len(x)
 
 async def main():
     MC_run = 1
-    MC_b = 0
-    t0 = MC_b == 0
-    if t0:
-        async def FUNC_MC_p1():
-            await async_print("1")
-    while MC_b < 10:
-        t2 = weak_arithmetic(MC_b) + weak_arithmetic(1)
-        MC_b = t2
+    t0 = await async_input("ingresa +, -, *, /")
+    MC_simbolo = t0
+    t1 = MC_simbolo == "+"
+    if t1:
+        await async_print("escogiste suma")
+        t2 = await async_input("ingresar numero")
+        MC_a = t2
+        t3 = await async_input("ingresar numero")
+        MC_b = t3
+        t4 = weak_arithmetic(MC_a) + weak_arithmetic(MC_b)
+        MC_r = t4
+        await async_print(MC_r)
+    else:
+        t5 = MC_simbolo == "-"
+        if t5:
+            await async_print("escogiste resta")
+            t6 = await async_input("ingresar numero")
+            MC_a = t6
+            t7 = await async_input("ingresar numero")
+            MC_b = t7
+            t8 = weak_arithmetic(MC_a) - weak_arithmetic(MC_b)
+            MC_r = t8
+            await async_print(MC_r)
+        else:
+            t9 = MC_simbolo == "*"
+            if t9:
+                await async_print("escogiste multi")
+                t10 = await async_input("ingresar numero")
+                MC_a = t10
+                t11 = await async_input("ingresar numero")
+                MC_b = t11
+                t12 = weak_arithmetic(MC_a) * weak_arithmetic(MC_b)
+                MC_r = t12
+                await async_print(MC_r)
+            else:
+                t13 = MC_simbolo == "/"
+                if t13:
+                    await async_print("escogiste division")
+                    t14 = await async_input("ingresar numero")
+                    MC_a = t14
+                    t15 = await async_input("ingresar numero")
+                    MC_b = t15
+                    t16 = weak_arithmetic(MC_a) / weak_arithmetic(MC_b)
+                    MC_r = t16
+                    await async_print(MC_r)
 ### FIN MCScript ###
