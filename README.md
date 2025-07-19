@@ -155,9 +155,9 @@ Este proyecto se distribuye bajo la **MIT License** — ver el archivo [`LICENSE
 | Rol             | Nombre                                                                  | Contacto                                        |
 | --------------- | ----------------------------------------------------------------------- | ----------------------------------------------- |
 | Autor           | Ulises Andrade González                                                 | [ulises.ag03@gmail.com](mailto:ulises.ag03@gmail.com) |
-| Autor           | Emilio Sebastián Chávez Vega                                            | []                                                |
-| Autor           | Luis Ángel Quijano Guerrero                                             |                                                  |
-| Autor           | Jesús Adrian Pacheco Garcia                                             |                                                  |
+| Autor           | Emilio Sebastián Chávez Vega                                            | [](mailto:).                                                |
+| Autor           | Luis Ángel Quijano Guerrero                                             | [luis5.quijano5@gmail.com](mailto:luis5.quijano5@gmail.com).                                                 |
+| Autor           | Jesús Adrian Pacheco Garcia                                             | [](mailto:).                                                  |
 | Autor           | Emiliano Rebolledo Navarrete                                            | [rebolledonavarreteemiliano@gmail.com](mailto:rebolledonavarreteemiliano@gmail.com) |
 
 > MCScript nació como proyecto final de la asignatura **Lenguajes y Autómatas II** del Instituto Tecnológico de Celaya (Julio 2025).
