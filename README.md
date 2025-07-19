@@ -140,7 +140,7 @@ morir;
             Ejecución
 ```
 
-*Más detalles en* [`4.6 Proyecto Final MCScript v5.pdf`](docs/).
+*Más detalles en* [`4.6 Proyecto Final MCScript v5.pdf`].
 
 ## Licencia
 
